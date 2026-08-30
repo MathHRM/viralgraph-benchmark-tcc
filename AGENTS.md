@@ -7,6 +7,10 @@ Este repositório será utilizado no desenvolvimento do Trabalho de Conclusão d
 - Gabriel Assunção Costa
 - Matheus Henrique Resende Magalhães
 
+## Orientador
+
+- Bernardo Jeunon de Alencar
+
 ## Tema atual
 
 **Teoria dos Grafos e Observabilidade: análise comparativa de arquiteturas backend sob estresse de viralização.**
@@ -78,6 +82,7 @@ Também podem ser utilizadas fontes oficiais, livros acadêmicos, dissertações
 
 Antes de utilizar uma referência, verifique:
 
+- se foi publicada a partir de 2021, inclusive, respeitando o limite máximo de cinco anos definido para o trabalho;
 - se é um artigo científico, livro acadêmico, dissertação, tese ou fonte oficial;
 - quem são os autores;
 - onde o trabalho foi publicado;
@@ -89,8 +94,7 @@ Antes de utilizar uma referência, verifique:
 
 Em assuntos relacionados à tecnologia:
 
-- priorize trabalhos recentes;
-- não descarte trabalhos clássicos quando forem fundamentais para o tema;
+- utilize apenas trabalhos publicados a partir de 2021, inclusive;
 - diferencie conceitos consolidados de resultados recentes;
 - procure fontes primárias em vez de textos que apenas resumem outros trabalhos.
 

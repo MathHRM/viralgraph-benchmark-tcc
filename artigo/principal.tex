@@ -25,12 +25,19 @@
 \newcommand{\funcaoB}{}
 \newcommand{\emailB}{}
 \newcommand{\cursB}{Aluno do curso de Sistemas de Informação}
+\newcommand{\AutorC}{Bernardo Jeunon de Alencar}
+\newcommand{\funcaoC}{}
+\newcommand{\emailC}{}
+\newcommand{\cursC}{Orientador do trabalho}
 
 \newcommand{\univ}{Pontifícia Universidade Católica de Minas Gerais}
 \newcommand{\keyword}[1]{\textsf{#1}}
 \newcommand{\instrucao}{\color{blue}}
 \newcommand{\estrutura}{\color{black}}
 \usepackage{url}
+\makeatletter
+\g@addto@macro{\UrlBreaks}{\UrlOrds}
+\makeatother
 \usepackage{adjustbox}
 \usetikzlibrary{arrows,shapes,positioning,shadows,trees}
 
@@ -57,7 +64,8 @@ Instituto de Ciências Exatas e de Informática
 \begin{flushright}
 \singlespacing
 \normalsize{\AutorA \footnote{\funcaoA \cursA.}} \\
-\normalsize{\AutorB \footnote{\funcaoB \cursB.}}
+\normalsize{\AutorB \footnote{\funcaoB \cursB.}} \\
+\normalsize{\AutorC \footnote{\funcaoC \cursC.}}
 \end{flushright}
 \thispagestyle{empty}
 

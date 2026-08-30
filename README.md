@@ -20,6 +20,10 @@ A observabilidade, apoiada por ferramentas como Prometheus, Grafana e OpenTeleme
 - Gabriel Assunção Costa
 - Matheus Henrique Resende Magalhães
 
+## Orientador
+
+- Bernardo Jeunon de Alencar
+
 ## Organização do repositório
 
 ```text
