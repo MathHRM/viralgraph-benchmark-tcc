@@ -9,16 +9,16 @@ Este repositório será utilizado no desenvolvimento do Trabalho de Conclusão d
 
 ## Tema atual
 
-**Teoria dos Grafos, Alta Performance e Observabilidade: análise comparativa de arquiteturas sob estresse de viralização.**
+**Teoria dos Grafos e Observabilidade: análise comparativa de arquiteturas backend sob estresse de viralização.**
 
 O trabalho investiga como a topologia das redes sociais e as cascatas de informação associadas à viralização — especialmente aquelas iniciadas por nós com alta centralidade de grau — produzem crescimento simultâneo de tráfego e de relações. A investigação deverá combinar simulações de carga que reproduzam o chamado “efeito manada” com observabilidade de métricas de máquina, filas e rastreamento distribuído.
 
-Serão comparados dois cenários backend submetidos ao mesmo estresse:
+O estudo não busca isolar o efeito individual de cada tecnologia, mas comparar duas composições arquiteturais completas submetidas ao mesmo estímulo de carga. Serão comparadas duas arquiteturas backend submetidas ao mesmo estresse:
 
-- um cenário tradicional, baseado em PHP-FPM, Laravel e MySQL, com fluxo síncrono e persistência transacional linha a linha;
-- um cenário de alta performance, baseado em PHP Swoole/Hyperf, RabbitMQ e Neo4j, com processamento assíncrono, orientação a eventos e ingestão em lotes por workers.
+- uma arquitetura síncrona, baseada em PHP-FPM, Laravel e MySQL, com fluxo síncrono e persistência transacional linha a linha;
+- uma arquitetura orientada a eventos, baseada em PHP Swoole/Hyperf, RabbitMQ e Neo4j, com processamento assíncrono e ingestão em lotes por workers.
 
-A observabilidade deverá utilizar ferramentas como Prometheus, Grafana e OpenTelemetry ou APM para avaliar a degradação e a resiliência dos cenários. Os resultados, métricas e conclusões ainda não devem ser inventados ou apresentados como já obtidos.
+A observabilidade deverá utilizar ferramentas como Prometheus, Grafana e OpenTelemetry ou APM para avaliar a degradação e a resiliência das arquiteturas. Os resultados, métricas e conclusões ainda não devem ser inventados ou apresentados como já obtidos.
 
 Antes de alterar o escopo, o problema de pesquisa ou o objetivo principal, apresente a proposta e solicite confirmação.
 

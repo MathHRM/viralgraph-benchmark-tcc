@@ -36,13 +36,53 @@
 - **Fundamenta:** velocidade, profundidade, alcance e distância de difusão de notícias.
 - **Status:** citada no artigo.
 
-### Kim e Lee (2017)
+### Kim, Kwon e Lee (2017)
 
 - **Título:** *Social Influence of Hubs in Information Cascade Processes*.
-- **Autores:** Joohyun Kim; Duk Hee Lee.
+- **Autores:** Joohyun Kim; Ohsung Kwon; Duk Hee Lee.
 - **Ano e publicação:** 2017; *Management Decision*, v. 55, n. 4, p. 730–744.
 - **DOI:** [10.1108/MD-10-2016-0681](https://doi.org/10.1108/MD-10-2016-0681).
 - **Fundamenta:** influência de hubs e relação entre centralidade e ocorrência de cascatas.
+- **Status:** citada no artigo.
+
+### Welsh, Culler e Brewer (2001)
+
+- **Título:** *SEDA: An Architecture for Well-Conditioned, Scalable Internet Services*.
+- **Autores:** Matt Welsh; David Culler; Eric Brewer.
+- **Ano e publicação:** 2001; *Proceedings of the 18th ACM Symposium on Operating Systems Principles*, p. 230–243.
+- **DOI:** [10.1145/502034.502057](https://doi.org/10.1145/502034.502057).
+- **Data de acesso:** 30 ago. 2026.
+- **Fundamenta:** arquitetura orientada a eventos em estágios, filas explícitas, condicionamento de carga e processamento de eventos em lotes.
+- **Status:** citada no artigo.
+
+### Cabane e Farias (2024)
+
+- **Título:** *On the Impact of Event-Driven Architecture on Performance: An Exploratory Study*.
+- **Autores:** Hebert Cabane; Kleinner Farias.
+- **Ano e publicação:** 2024; *Future Generation Computer Systems*, v. 153, p. 52–69.
+- **DOI:** [10.1016/j.future.2023.10.021](https://doi.org/10.1016/j.future.2023.10.021).
+- **Data de acesso:** 30 ago. 2026.
+- **Fundamenta:** avaliação empírica de arquitetura orientada a eventos com métricas de recursos, tempo de resposta, throughput e tráfego de rede.
+- **Status:** citada no artigo.
+
+### Menascé (2002)
+
+- **Título:** *Load Testing of Web Sites*.
+- **Autor:** Daniel A. Menascé.
+- **Ano e publicação:** 2002; *IEEE Internet Computing*, v. 6, n. 4, p. 70–74.
+- **DOI:** [10.1109/MIC.2002.1020328](https://doi.org/10.1109/MIC.2002.1020328).
+- **Data de acesso:** 30 ago. 2026.
+- **Fundamenta:** definição de testes de carga, representação da carga de trabalho e avaliação de tempo de resposta, throughput e disponibilidade.
+- **Status:** citada no artigo.
+
+### Kotiranta, Junkkari e Nummenmaa (2022)
+
+- **Título:** *Performance of Graph and Relational Databases in Complex Queries*.
+- **Autores:** Petri Kotiranta; Marko Junkkari; Jyrki Nummenmaa.
+- **Ano e publicação:** 2022; *Applied Sciences*, v. 12, n. 13, art. 6490.
+- **DOI:** [10.3390/app12136490](https://doi.org/10.3390/app12136490).
+- **Data de acesso:** 30 ago. 2026.
+- **Fundamenta:** comparação de desempenho entre Neo4j, MySQL e MariaDB e influência do tipo de consulta, de índices e de otimizações.
 - **Status:** citada no artigo.
 
 ### Juul e Ugander (2021)
