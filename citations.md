@@ -6,6 +6,7 @@
 - **Autores:** Albert-László Barabási; Réka Albert.
 - **Ano e publicação:** 1999; *Science*, v. 286, n. 5439, p. 509–512.
 - **DOI:** [10.1126/science.286.5439.509](https://doi.org/10.1126/science.286.5439.509).
+- **Data de acesso:** 30 ago. 2026.
 - **Fundamenta:** crescimento, conexão preferencial e distribuição desigual de conectividade.
 - **Status:** citada no artigo.
 
@@ -42,6 +43,7 @@
 - **Autores:** Joohyun Kim; Ohsung Kwon; Duk Hee Lee.
 - **Ano e publicação:** 2017; *Management Decision*, v. 55, n. 4, p. 730–744.
 - **DOI:** [10.1108/MD-10-2016-0681](https://doi.org/10.1108/MD-10-2016-0681).
+- **Data de acesso:** 30 ago. 2026.
 - **Fundamenta:** influência de hubs e relação entre centralidade e ocorrência de cascatas.
 - **Status:** citada no artigo.
 
@@ -102,4 +104,15 @@
 - **URL:** [opentelemetry.io/docs/what-is-opentelemetry](https://opentelemetry.io/docs/what-is-opentelemetry/).
 - **Data de acesso:** 30 ago. 2026.
 - **Fundamenta:** definição do OpenTelemetry como framework independente de fornecedor para sinais de observabilidade.
+- **Status:** citada no artigo.
+
+### Tzanettis et al. (2022)
+
+- **Título:** *Data Fusion of Observability Signals for Assisting Orchestration of Distributed Applications*.
+- **Autores:** Ioannis Tzanettis; Christina-Maria Androna; Anastasios Zafeiropoulos; Eleni Fotopoulou; Symeon Papavassiliou.
+- **Ano e publicação:** 2022; artigo científico em *Sensors*, v. 22, n. 5, art. 2061.
+- **DOI:** [10.3390/s22052061](https://doi.org/10.3390/s22052061).
+- **URL:** [pmc.ncbi.nlm.nih.gov/articles/PMC8915136](https://pmc.ncbi.nlm.nih.gov/articles/PMC8915136/).
+- **Data de acesso:** 30 ago. 2026.
+- **Fundamenta:** definição de observabilidade em sistemas distribuídos, distinção em relação ao monitoramento, complementaridade e correlação entre métricas, logs e rastros e associação desses sinais a latência, erros e utilização de recursos.
 - **Status:** citada no artigo.

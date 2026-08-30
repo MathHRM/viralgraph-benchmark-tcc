@@ -6,7 +6,7 @@ Repositório do Trabalho de Conclusão de Curso do 8º período de Sistemas de I
 
 **Teoria dos Grafos e Observabilidade: análise comparativa de arquiteturas backend sob estresse de viralização.**
 
-O trabalho investiga como a topologia das redes sociais e as cascatas de informação associadas à viralização — especialmente aquelas iniciadas por nós com alta centralidade de grau — produzem crescimento simultâneo de tráfego e de relações. A análise será realizada por meio de simulações de carga que reproduzem o chamado “efeito manada” e pela observação de métricas de máquina, filas e rastreamento distribuído.
+O trabalho investiga como a topologia das redes sociais e as cascatas de informação associadas à viralização — especialmente aquelas iniciadas por nós com alta centralidade de grau — produzem crescimento simultâneo de tráfego e de relações. A análise será realizada por meio de simulações de cascatas que produzam picos de compartilhamento e de carga associados à viralização e pela observação de métricas de máquina, filas e rastreamento distribuído.
 
 O estudo não busca isolar o efeito individual de cada tecnologia, mas comparar duas composições arquiteturais completas submetidas ao mesmo estímulo de carga. Serão comparadas duas arquiteturas backend submetidas ao mesmo estresse:
 
