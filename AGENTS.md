@@ -37,6 +37,8 @@ Regras obrigatórias:
 - O conteúdo produzido deve manter linguagem acadêmica, clara, objetiva e impessoal.
 - Não inventar resultados, experimentos, métricas, referências ou conclusões.
 
+Ao gerar versões do artigo com `scripts/render-latex.sh`, o script deve remover, após uma compilação bem-sucedida, todas as versões antigas do mesmo documento e manter somente o PDF recém-gerado. Não restaurar versões antigas automaticamente após a execução do script.
+
 ### Código-fonte
 
 Todo o código desenvolvido para o projeto deverá ficar no diretório `code/`.

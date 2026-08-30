@@ -36,7 +36,6 @@ for previous_file in "$output_path/${document_name}"-v*.pdf; do
     fi
 done
 output_file="${document_name}-v${version}.pdf"
-previous_version=$((version - 1))
 
 if ! docker image inspect "$IMAGE_NAME" >/dev/null 2>&1; then
     printf 'Imagem %s não encontrada; construindo...\n' "$IMAGE_NAME"
@@ -52,8 +51,10 @@ docker run --rm \
     sh -c 'rm -rf /tmp/work && mkdir -p /tmp/work && cp -a /source/. /tmp/work/ && latexmk -pdf -interaction=nonstopmode -halt-on-error -outdir=/tmp/work "/tmp/work/$1" && cp "/tmp/work/${1%.tex}.pdf" "/output/$2"' \
     sh "$main_file" "$output_file"
 
-if (( previous_version > 0 )); then
-    rm -- "$output_path/${document_name}-v${previous_version}.pdf"
-fi
+for previous_file in "$output_path/${document_name}"-v*.pdf; do
+    if [[ -f "$previous_file" && "$previous_file" != "$output_path/$output_file" ]]; then
+        rm -- "$previous_file"
+    fi
+done
 
 printf 'PDF gerado: %s\n' "$output_path/$output_file"
