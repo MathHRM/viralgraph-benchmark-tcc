@@ -38,6 +38,11 @@ Regras obrigatórias:
 - A estrutura e a formatação do template devem ser preservadas, respeitando também as orientações institucionais da PUC Minas e as normas da ABNT vigentes em 2026.
 - Não alterar margens, tipografia, espaçamentos, cabeçalhos, organização ou outros padrões visuais sem solicitação explícita.
 - Antes de criar ou modificar partes do documento, examine o template e reutilize seus comandos, ambientes e convenções.
+- Antes de escrever ou revisar uma seção, consulte no arquivo `modelo-de-artigo-icei-puc-minas/textos.tex` as instruções específicas dessa seção, incluindo conteúdo obrigatório, organização e limite de páginas.
+- Respeite os limites de páginas indicados pelo template para cada seção e o limite total do artigo; avalie esses limites no PDF compilado, não por estimativa baseada no número de linhas do LaTeX.
+- Preserve a ordem e a função das seções definidas pelo template. Conteúdo metodológico, desenvolvimento, resultados e conclusões deve permanecer na seção correspondente, sem ampliar indevidamente a introdução ou outra seção.
+- A introdução deve ocupar de uma a duas páginas, em texto contínuo e sem subtítulos internos, com parágrafos encadeados que cumpram as funções indicadas pelo template: contexto, problema, justificativa, objetivo geral, objetivos específicos e estrutura do trabalho.
+- Depois de alterar o documento, compile-o e confira no PDF a paginação, a sequência das seções, a presença dos elementos exigidos e a ausência de conteúdo instrucional visível.
 - O conteúdo produzido deve manter linguagem acadêmica, clara, objetiva e impessoal.
 - Não inventar resultados, experimentos, métricas, referências ou conclusões.
 
