@@ -1,60 +1,63 @@
 ## Fontes consultadas e citadas
 
-### Barabási e Albert (1999)
+### Piva, Ribeiro e Mata (2021)
 
-- **Título:** *Emergence of Scaling in Random Networks*.
-- **Autores:** Albert-László Barabási; Réka Albert.
-- **Ano e publicação:** 1999; *Science*, v. 286, n. 5439, p. 509–512.
-- **DOI:** [10.1126/science.286.5439.509](https://doi.org/10.1126/science.286.5439.509).
+- **Título:** *Networks with Growth and Preferential Attachment: Modelling and Applications*.
+- **Autores:** Gabriel G. Piva; Fabiano L. Ribeiro; Angélica S. Mata.
+- **Ano e publicação:** 2021; *Journal of Complex Networks*, v. 9, n. 1, art. cnab008.
+- **DOI:** [10.1093/comnet/cnab008](https://doi.org/10.1093/comnet/cnab008).
 - **Data de acesso:** 30 ago. 2026.
 - **Fundamenta:** crescimento, conexão preferencial e distribuição desigual de conectividade.
 - **Status:** citada no artigo.
 
-### Watts (2002)
+### Liang (2021)
 
-- **Título:** *A Simple Model of Global Cascades on Random Networks*.
-- **Autor:** Duncan J. Watts.
-- **Ano e publicação:** 2002; *Proceedings of the National Academy of Sciences*, v. 99, n. 9, p. 5766–5771.
-- **DOI:** [10.1073/pnas.082090499](https://doi.org/10.1073/pnas.082090499).
-- **Fundamenta:** modelo de cascatas globais e condições para a propagação de pequenos choques.
+- **Título:** *Decreasing Social Contagion Effects in Diffusion Cascades: Modeling Message Spreading on Social Media*.
+- **Autor:** Hai Liang.
+- **Ano e publicação:** 2021; *Telematics and Informatics*, v. 62, art. 101623.
+- **DOI:** [10.1016/j.tele.2021.101623](https://doi.org/10.1016/j.tele.2021.101623).
+- **Data de acesso:** 30 ago. 2026.
+- **Fundamenta:** variação dos efeitos de contágio e da homofilia conforme a profundidade das cascatas.
 - **Status:** citada no artigo.
 
-### Goel et al. (2016)
+### Sepehr e Beigy (2022)
 
-- **Título:** *The Structural Virality of Online Diffusion*.
-- **Autores:** Sharad Goel; Ashton Anderson; Jake Hofman; Duncan J. Watts.
-- **Ano e publicação:** 2016; *Management Science*, v. 62, n. 1, p. 180–196.
-- **DOI:** [10.1287/mnsc.2015.2158](https://doi.org/10.1287/mnsc.2015.2158).
+- **Título:** *Structural Virality Estimation and Maximization in Diffusion Networks*.
+- **Autores:** Arman Sepehr; Hamid Beigy.
+- **Ano e publicação:** 2022; *Expert Systems with Applications*, v. 206, art. 117657.
+- **DOI:** [10.1016/j.eswa.2022.117657](https://doi.org/10.1016/j.eswa.2022.117657).
+- **Data de acesso:** 30 ago. 2026.
 - **Fundamenta:** virulência estrutural e distinção entre transmissão ampla e múltiplas gerações.
 - **Status:** citada no artigo.
 
-### Vosoughi, Roy e Aral (2018)
+### Abella, San Miguel e Ramasco (2023)
 
-- **Título:** *The Spread of True and False News Online*.
-- **Autores:** Soroush Vosoughi; Deb Roy; Sinan Aral.
-- **Ano e publicação:** 2018; *Science*, v. 359, n. 6380, p. 1146–1151.
-- **DOI:** [10.1126/science.aap9559](https://doi.org/10.1126/science.aap9559).
-- **Fundamenta:** velocidade, profundidade, alcance e distância de difusão de notícias.
+- **Título:** *Aging in Binary-State Models: The Threshold Model for Complex Contagion*.
+- **Autores:** David Abella; Maxi San Miguel; José J. Ramasco.
+- **Ano e publicação:** 2023; *Physical Review E*, v. 107, n. 2, art. 024101.
+- **DOI:** [10.1103/PhysRevE.107.024101](https://doi.org/10.1103/PhysRevE.107.024101).
+- **Data de acesso:** 30 ago. 2026.
+- **Fundamenta:** relação entre topologia, condições de cascata e dinâmica temporal em modelos de limiar.
 - **Status:** citada no artigo.
 
-### Kim, Kwon e Lee (2017)
+### Zareie e Sakellariou (2023)
 
-- **Título:** *Social Influence of Hubs in Information Cascade Processes*.
-- **Autores:** Joohyun Kim; Ohsung Kwon; Duk Hee Lee.
-- **Ano e publicação:** 2017; *Management Decision*, v. 55, n. 4, p. 730–744.
-- **DOI:** [10.1108/MD-10-2016-0681](https://doi.org/10.1108/MD-10-2016-0681).
+- **Título:** *Influence Maximization in Social Networks: A Survey of Behaviour-Aware Methods*.
+- **Autores:** Ahmad Zareie; Rizos Sakellariou.
+- **Ano e publicação:** 2023; *Social Network Analysis and Mining*, v. 13, n. 1, art. 78.
+- **DOI:** [10.1007/s13278-023-01078-9](https://doi.org/10.1007/s13278-023-01078-9).
 - **Data de acesso:** 30 ago. 2026.
-- **Fundamenta:** influência de hubs e relação entre centralidade e ocorrência de cascatas.
+- **Fundamenta:** seleção de sementes, medidas de centralidade e métodos de maximização de influência atentos ao comportamento.
 - **Status:** citada no artigo.
 
-### Welsh, Culler e Brewer (2001)
+### Camilli, Janes e Russo (2022)
 
-- **Título:** *SEDA: An Architecture for Well-Conditioned, Scalable Internet Services*.
-- **Autores:** Matt Welsh; David Culler; Eric Brewer.
-- **Ano e publicação:** 2001; *Proceedings of the 18th ACM Symposium on Operating Systems Principles*, Banff, Alberta, Canadá: Association for Computing Machinery, p. 230–243.
-- **DOI:** [10.1145/502034.502057](https://doi.org/10.1145/502034.502057).
+- **Título:** *Automated Test-Based Learning and Verification of Performance Models for Microservices Systems*.
+- **Autores:** Matteo Camilli; Andrea Janes; Barbara Russo.
+- **Ano e publicação:** 2022; *Journal of Systems and Software*, v. 187, art. 111225.
+- **DOI:** [10.1016/j.jss.2022.111225](https://doi.org/10.1016/j.jss.2022.111225).
 - **Data de acesso:** 30 ago. 2026.
-- **Fundamenta:** arquitetura orientada a eventos em estágios, filas explícitas, condicionamento de carga e processamento de eventos em lotes.
+- **Fundamenta:** testes com cargas realistas e comparação controlada de configurações para análise de desempenho e escalabilidade.
 - **Status:** citada no artigo.
 
 ### Cabane e Farias (2024)
@@ -65,16 +68,6 @@
 - **DOI:** [10.1016/j.future.2023.10.021](https://doi.org/10.1016/j.future.2023.10.021).
 - **Data de acesso:** 30 ago. 2026.
 - **Fundamenta:** avaliação empírica de arquitetura orientada a eventos com métricas de recursos, tempo de resposta, throughput e tráfego de rede.
-- **Status:** citada no artigo.
-
-### Menascé (2002)
-
-- **Título:** *Load Testing of Web Sites*.
-- **Autor:** Daniel A. Menascé.
-- **Ano e publicação:** 2002; *IEEE Internet Computing*, v. 6, n. 4, p. 70–74.
-- **DOI:** [10.1109/MIC.2002.1020328](https://doi.org/10.1109/MIC.2002.1020328).
-- **Data de acesso:** 30 ago. 2026.
-- **Fundamenta:** definição de testes de carga, representação da carga de trabalho e avaliação de tempo de resposta, throughput e disponibilidade.
 - **Status:** citada no artigo.
 
 ### Kotiranta, Junkkari e Nummenmaa (2022)
@@ -115,4 +108,20 @@
 - **URL:** [pmc.ncbi.nlm.nih.gov/articles/PMC8915136](https://pmc.ncbi.nlm.nih.gov/articles/PMC8915136/).
 - **Data de acesso:** 30 ago. 2026.
 - **Fundamenta:** definição de observabilidade em sistemas distribuídos, distinção em relação ao monitoramento, complementaridade e correlação entre métricas, logs e rastros e associação desses sinais a latência, erros e utilização de recursos.
+- **Status:** citada no artigo.
+
+### Gil (2022)
+
+- **Título:** *Como elaborar projetos de pesquisa*.
+- **Autor:** Antônio Carlos Gil.
+- **Ano e publicação:** 2022; livro acadêmico, 7. ed., Barueri: Atlas.
+- **Fundamenta:** classificação das pesquisas científicas apresentada na seção de metodologia.
+- **Status:** citada no artigo.
+
+### Wazlawick (2021)
+
+- **Título:** *Metodologia de pesquisa para ciência da computação*.
+- **Autor:** Raul Sidnei Wazlawick.
+- **Ano e publicação:** 2021; livro acadêmico, 3. ed., Rio de Janeiro: LTC.
+- **Fundamenta:** classificação e planejamento metodológico de pesquisas em ciência da computação.
 - **Status:** citada no artigo.
