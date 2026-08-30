@@ -51,7 +51,7 @@
 
 - **Título:** *SEDA: An Architecture for Well-Conditioned, Scalable Internet Services*.
 - **Autores:** Matt Welsh; David Culler; Eric Brewer.
-- **Ano e publicação:** 2001; *Proceedings of the 18th ACM Symposium on Operating Systems Principles*, p. 230–243.
+- **Ano e publicação:** 2001; *Proceedings of the 18th ACM Symposium on Operating Systems Principles*, Banff, Alberta, Canadá: Association for Computing Machinery, p. 230–243.
 - **DOI:** [10.1145/502034.502057](https://doi.org/10.1145/502034.502057).
 - **Data de acesso:** 30 ago. 2026.
 - **Fundamenta:** arquitetura orientada a eventos em estágios, filas explícitas, condicionamento de carga e processamento de eventos em lotes.
@@ -96,10 +96,10 @@
 - **Fundamenta:** controle do tamanho das cascatas na comparação de mecanismos de difusão.
 - **Status:** citada no artigo.
 
-### OpenTelemetry Authors (2026)
+### OpenTelemetry (2026)
 
 - **Título:** *What is OpenTelemetry?*.
-- **Autor institucional:** OpenTelemetry Authors.
+- **Autor institucional:** OpenTelemetry.
 - **Ano e tipo:** 2026; documentação oficial do projeto OpenTelemetry.
 - **URL:** [opentelemetry.io/docs/what-is-opentelemetry](https://opentelemetry.io/docs/what-is-opentelemetry/).
 - **Data de acesso:** 30 ago. 2026.
