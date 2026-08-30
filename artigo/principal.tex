@@ -1,0 +1,93 @@
+\documentclass[a4paper,12pt]{article}
+\usepackage{times}
+\usepackage{abakos}
+\usepackage[hidelinks]{hyperref}
+\providecommand{\htmladdnormallink}[2]{\href{#2}{#1}}
+
+\makeatletter
+\AddToHook{env/thebibliography/begin}{%
+  \def\UrlLeft{}%
+  \def\UrlRight{}%
+  \urlstyle{same}%
+}
+\makeatother
+
+\newcommand{\monog}{Conexões humanas em redes sociais sob a perspectiva da Teoria dos Grafos}
+\newcommand{\tipo}{Artigo}
+\newcommand{\editorial}{}
+\newcommand{\lcc}{{\scriptsize Licença Creative Commons Attribution-NonCommercial-NoDerivatives 4.0 International License}}
+
+\newcommand{\AutorA}{Gabriel Assunção Costa}
+\newcommand{\funcaoA}{}
+\newcommand{\emailA}{}
+\newcommand{\cursA}{Aluno do curso de Sistemas de Informação}
+\newcommand{\AutorB}{Matheus Henrique Resende Magalhães}
+\newcommand{\funcaoB}{}
+\newcommand{\emailB}{}
+\newcommand{\cursB}{Aluno do curso de Sistemas de Informação}
+
+\newcommand{\univ}{Pontifícia Universidade Católica de Minas Gerais}
+\newcommand{\keyword}[1]{\textsf{#1}}
+\newcommand{\instrucao}{\color{blue}}
+\newcommand{\estrutura}{\color{black}}
+\usepackage{url}
+\makeatletter
+\g@addto@macro{\UrlBreaks}{\UrlOrds}
+\makeatother
+\usepackage{adjustbox}
+\usetikzlibrary{arrows,shapes,positioning,shadows,trees}
+
+\tikzset{
+  basic/.style  = {draw, text width=3cm, drop shadow, font=\sffamily, rectangle},
+  root/.style   = {basic, rounded corners=2pt, thin, align=center,
+                   fill=blue!30},
+  level 2/.style = {basic, rounded corners=6pt, thin,align=center, fill=green!30,
+                   text width=8em},
+  level 3/.style = {basic, thin, align=left, fill=pink!60, text width=6.5em}
+}
+
+\begin{document}
+\begin{center}
+\includegraphics[scale=0.25]{figuras/brasao} \\
+PONTIFÍCIA UNIVERSIDADE CATÓLICA DE MINAS GERAIS \\
+Instituto de Ciências Exatas e de Informática
+\end{center}
+
+\vspace{0cm}
+{\singlespacing \Large{\monog \symbolfootnote[1]{Artigo apresentado ao Instituto de Ciências Exatas e Informática da Pontifícia Universidade Católica de Minas Gerais, campus Betim, como pré-requisito parcial para obtenção do título de Bacharel em Sistemas de Informação.} \\}}
+
+\vspace{1.0cm}
+\begin{flushright}
+\singlespacing
+\normalsize{\AutorA \footnote{\funcaoA \cursA.}} \\
+\normalsize{\AutorB \footnote{\funcaoB \cursB.}}
+\end{flushright}
+\thispagestyle{empty}
+
+\vspace{1.0cm}
+\begin{abstract}
+\noindent
+\textcolor{blue}{O resumo é redigido em parágrafo único. Deve apresentar, de forma sucinta, o contexto, o problema, a justificativa, o objetivo, o desenvolvimento, os resultados e a conclusão do documento. O texto deverá conter de 100 a 250 palavras.}
+\\\textbf{\keyword{Palavras-chave:}}
+\end{abstract}
+
+\selectlanguage{english}
+\begin{abstract}
+\noindent
+\textcolor{blue}{The abstract must be written in a single paragraph and should briefly present the context, problem, justification, objective, development, results, and conclusion of the document. It should contain between 100 and 250 words.}
+\\\textbf{\keyword{Keywords:}}
+\end{abstract}
+
+\selectlanguage{brazilian}
+\onehalfspace
+\setlength{\parindent}{1.25cm}
+\include{textos}
+
+\newpage
+\estrutura
+\singlespace{
+\renewcommand\refname{REFERÊNCIAS}
+\bibliography{bibliografia}
+}
+\bibliographystyle{abntex2-alf}
+\end{document}
