@@ -8,8 +8,33 @@
 %% Revisora normas NBR (Padrão PUC Minas) da terceira versão: Profa. Amália Vasconcelos.                   %%
 %% Versão: 3.0     02 de fevereiro de 2026  
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\instrucao
-\estrutura\section{\esp Introdução (1 - 2 páginas)}\instrucao 
+\estrutura\section{\esp Introdução}
+
+As redes sociais digitais podem ser analisadas como redes complexas nas quais usuários, publicações e interações formam vértices e arestas de um grafo. Essa representação permite estudar não apenas a quantidade de mensagens produzidas, mas também a forma como as conexões organizam a circulação de informações. Em redes com distribuição desigual de conectividade, alguns vértices concentram muitas relações e podem exercer influência desproporcional sobre a propagação de conteúdos, fenômeno associado à emergência de estruturas de escala livre em redes que crescem por conexão preferencial \cite{barabasi1999}.
+
+Quando uma informação é compartilhada sucessivamente, produz-se uma cascata de difusão. Modelos de limiar mostram que uma perturbação inicialmente pequena pode alcançar grande parte da rede quando a topologia e as condições de ativação favorecem a propagação \cite{watts2002}. Neste trabalho, o chamado efeito manada é tratado como uma hipótese operacional de carga: usuários são estimulados por exposições anteriores a compartilhar o mesmo conteúdo, com maior intensidade quando a cascata alcança nós de alta centralidade. Essa definição será avaliada por simulação, e não constitui um resultado previamente obtido.
+
+O problema desta pesquisa consiste em investigar como diferentes arquiteturas backend respondem ao estresse gerado por cascatas de informação em redes sociais. A pergunta que orienta o estudo é: como a topologia da rede e a concentração de influência em nós de alta centralidade afetam o desempenho, a formação de filas, a utilização de recursos e a resiliência de arquiteturas síncronas e assíncronas submetidas ao mesmo padrão de viralização? A comparação considera um cenário tradicional, baseado em PHP-FPM, Laravel e MySQL, com processamento síncrono e persistência transacional linha a linha, e um cenário de alta performance, baseado em PHP com Swoole/Hyperf, RabbitMQ e Neo4j, com processamento orientado a eventos, filas e ingestão em lotes por workers.
+
+A justificativa do estudo está na aproximação entre propriedades estruturais da rede e consequências observáveis na infraestrutura de software. Embora medidas de alcance, profundidade, largura e velocidade sejam usadas para descrever cascatas, compará-las exige considerar que essas propriedades são dependentes entre si \cite{juul2021}. Além disso, a distinção entre difusão por transmissão ampla e difusão por múltiplas gerações permite relacionar a forma da cascata ao padrão de requisições e de escritas persistentes \cite{goel2016}. Assim, a avaliação conjunta de grafos, carga e observabilidade pode contribuir para uma análise experimental mais precisa do comportamento dos dois cenários, sem reduzir a discussão a uma comparação isolada de tempo de resposta.
+
+O objetivo geral é analisar comparativamente o comportamento de uma arquitetura tradicional e de uma arquitetura de alta performance durante a simulação de cascatas de informação associadas à viralização em redes sociais. Para alcançá-lo, são definidos os seguintes objetivos específicos: modelar redes e cascatas com diferentes distribuições de conectividade e concentrações de centralidade; implementar geradores de carga capazes de reproduzir o efeito manada sob condições controladas; executar os dois cenários backend com o mesmo estímulo de carga; coletar métricas de máquina, filas, persistência e rastreamento distribuído; e comparar os indicadores de desempenho, degradação e recuperação observados nos experimentos.
+
+O restante deste artigo está organizado da seguinte forma: a seção de trabalhos relacionados apresenta pesquisas sobre redes complexas, difusão de informação e influência de nós centrais; a metodologia descreve a classificação da pesquisa, os cenários arquiteturais, o modelo de carga e o plano de observabilidade; os resultados apresentarão os dados obtidos após a execução dos experimentos; a discussão interpretará as diferenças observadas à luz do modelo de grafos e das características das arquiteturas; e, por fim, as considerações finais sintetizarão as conclusões e as possibilidades de trabalhos futuros.
+
+\estrutura\section{\esp Trabalhos Relacionados}
+
+Goel et al. investigaram a chamada virulência estrutural de difusões on-line, propondo uma medida baseada na forma da cascata para diferenciar processos predominantemente de transmissão ampla daqueles que se desenvolvem por múltiplas gerações. A análise de eventos de difusão em larga escala mostrou que o tamanho da cascata, isoladamente, não descreve sua estrutura. Esse resultado é relevante para este trabalho porque fundamenta a separação entre volume de compartilhamentos e topologia da propagação \cite{goel2016}.
+
+Vosoughi, Roy e Aral analisaram a propagação de notícias verdadeiras e falsas no Twitter a partir de histórias verificadas publicadas entre 2006 e 2017. Os autores observaram diferenças na distância, velocidade, profundidade e alcance da difusão, além de destacarem a importância do comportamento humano na aceleração da circulação de conteúdos. O estudo fornece uma motivação empírica para tratar a viralização como uma carga variável e estruturada, embora seus dados e sua plataforma sejam diferentes do ambiente experimental proposto neste TCC \cite{vosoughi2018}.
+
+Kim e Lee estudaram, por meio de simulação computacional, a influência de hubs em processos de cascata de informação. O trabalho relacionou medidas como centralidade de autovetor, intermediação e PageRank à ocorrência de cascatas, ressaltando o papel de nós que conectam diferentes regiões da rede. Essa abordagem se aproxima diretamente do recorte deste estudo, que pretende variar a participação de nós de alta centralidade para avaliar seu impacto sobre o estresse backend \cite{kim2017}.
+
+Juul e Ugander discutiram a comparação entre mecanismos de difusão por meio do pareamento de cascatas com tamanhos semelhantes. Os autores mostram que propriedades estruturais da cascata podem produzir conclusões distintas quando não são controladas conjuntamente. A contribuição orienta o desenho experimental deste trabalho: as comparações entre arquiteturas deverão manter equivalentes, tanto quanto possível, os parâmetros do estímulo de carga, registrando separadamente as características topológicas e os indicadores de infraestrutura \cite{juul2021}.
+
+Por fim, a instrumentação proposta utilizará conceitos de observabilidade compatíveis com a coleta integrada de métricas, logs e rastros. O OpenTelemetry é um framework aberto e independente de fornecedor para gerar, coletar e exportar esses sinais, não sendo ele próprio um backend de armazenamento ou visualização \cite{opentelemetry2026}. Sua adoção deverá permitir relacionar eventos da cascata, operações enfileiradas e etapas de persistência, respeitando os limites do experimento e sem antecipar resultados.
+
+\iffalse
 
 %\textcolor{red}{\textbf{Importante:}} mantenha atualizada a versão do TeX Live. No Overleaf, escolha o "motor" de compilação no menu \texttt{File >\allowbreak\ Settings >\allowbreak\ Compiler >\allowbreak\ TeX Live version >\allowbreak\ selecione a mais atual}. Ex.: 2025.
 
@@ -290,6 +315,8 @@ Já para dissertação de mestrado veja \citeonline{mestrado2010}. E para o dout
 Exemplo de capítulo de livro fica conforme esse exemplo: \citeonline{cap-livro2005}.
 
 Para livros citados no corpo do texto e com duas citações juntas, ver os exemplos: \citeonline{knuth1968,groupp2003}.
+
+\fi
 
 \newpage
 
