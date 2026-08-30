@@ -4,6 +4,7 @@ set -Eeuo pipefail
 
 readonly IMAGE_NAME="tcc-latex:local"
 readonly SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+readonly REPOSITORY_DIR="$(cd -- "$SCRIPT_DIR/.." && pwd)"
 
 latex_path="${1:-artigo}"
 output_path="${2:-.}"
@@ -29,14 +30,17 @@ fi
 
 document_name="${DOCUMENT_NAME:-$(basename -- "$latex_path")}"
 version=1
-while [[ -e "$output_path/${document_name}-v${version}.pdf" ]]; do
-    version=$((version + 1))
+for previous_file in "$output_path/${document_name}"-v*.pdf; do
+    if [[ "$previous_file" =~ -v([0-9]+)\.pdf$ ]] && (( BASH_REMATCH[1] >= version )); then
+        version=$((BASH_REMATCH[1] + 1))
+    fi
 done
 output_file="${document_name}-v${version}.pdf"
+previous_version=$((version - 1))
 
 if ! docker image inspect "$IMAGE_NAME" >/dev/null 2>&1; then
     printf 'Imagem %s não encontrada; construindo...\n' "$IMAGE_NAME"
-    docker build --tag "$IMAGE_NAME" "$SCRIPT_DIR"
+    docker build --tag "$IMAGE_NAME" "$REPOSITORY_DIR"
 fi
 
 printf 'Compilando %s/%s -> %s/%s\n' "$latex_path" "$main_file" "$output_path" "$output_file"
@@ -47,5 +51,9 @@ docker run --rm \
     "$IMAGE_NAME" \
     sh -c 'rm -rf /tmp/work && mkdir -p /tmp/work && cp -a /source/. /tmp/work/ && latexmk -pdf -interaction=nonstopmode -halt-on-error -outdir=/tmp/work "/tmp/work/$1" && cp "/tmp/work/${1%.tex}.pdf" "/output/$2"' \
     sh "$main_file" "$output_file"
+
+if (( previous_version > 0 )); then
+    rm -- "$output_path/${document_name}-v${previous_version}.pdf"
+fi
 
 printf 'PDF gerado: %s\n' "$output_path/$output_file"

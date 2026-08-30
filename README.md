@@ -29,7 +29,8 @@ A observabilidade, apoiada por ferramentas como Prometheus, Grafana e OpenTeleme
 ├── modelo-de-artigo-icei-puc-minas/    # Template institucional do artigo
 ├── citations.md                         # Registro das fontes consultadas e citadas
 ├── Dockerfile                           # Imagem usada para compilar o LaTeX
-└── render-latex.sh                      # Script de compilação e geração do PDF
+└── scripts/
+    └── render-latex.sh                  # Script de compilação e geração do PDF
 ```
 
 ## Decisões técnicas
@@ -54,7 +55,7 @@ O script utiliza a imagem `texlive/texlive:latest` para compilar o artigo. Na pr
 Na raiz do repositório, execute:
 
 ```bash
-./render-latex.sh
+./scripts/render-latex.sh
 ```
 
 Por padrão, o script:
@@ -62,18 +63,19 @@ Por padrão, o script:
 1. utiliza a pasta `artigo/` como fonte;
 2. procura o arquivo `principal.tex`;
 3. compila o documento com `latexmk` dentro do Docker;
-4. grava o PDF na raiz com o nome `artigo-vN.pdf`, incrementando `N` quando já existir uma versão.
+4. grava o PDF na raiz com o nome `artigo-vN.pdf`, incrementando `N` quando já existir uma versão;
+5. remove a versão imediatamente anterior somente depois que a nova compilação for concluída.
 
 Também é possível informar a pasta do documento e o diretório de saída:
 
 ```bash
-./render-latex.sh caminho/para/o/latex caminho/para/saida
+./scripts/render-latex.sh caminho/para/o/latex caminho/para/saida
 ```
 
 Para definir outro nome-base para o arquivo gerado, use a variável `DOCUMENT_NAME`:
 
 ```bash
-DOCUMENT_NAME=tcc ./render-latex.sh
+DOCUMENT_NAME=tcc ./scripts/render-latex.sh
 ```
 
 ## Desenvolvimento da aplicação
