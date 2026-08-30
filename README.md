@@ -4,9 +4,16 @@ Repositório do Trabalho de Conclusão de Curso do 8º período de Sistemas de I
 
 ## Tema
 
-O projeto estuda o comportamento das conexões humanas em redes sociais por meio da Teoria dos Grafos, com apoio de uma arquitetura backend de alta performance para ingestão e processamento de dados relacionais em larga escala.
+**Teoria dos Grafos, Alta Performance e Observabilidade: análise comparativa de arquiteturas sob estresse de viralização.**
 
-O tema ainda está em desenvolvimento e poderá ser refinado durante a elaboração do trabalho.
+O trabalho investiga como a topologia das redes sociais e as cascatas de informação associadas à viralização — especialmente aquelas iniciadas por nós com alta centralidade de grau — produzem crescimento simultâneo de tráfego e de relações. A análise será realizada por meio de simulações de carga que reproduzem o chamado “efeito manada” e pela observação de métricas de máquina, filas e rastreamento distribuído.
+
+Serão comparados dois cenários backend submetidos ao mesmo estresse:
+
+- um cenário tradicional, baseado em PHP-FPM, Laravel e MySQL, com fluxo síncrono e persistência transacional linha a linha;
+- um cenário de alta performance, baseado em PHP Swoole/Hyperf, RabbitMQ e Neo4j, com processamento assíncrono, orientação a eventos e ingestão em lotes por workers.
+
+A observabilidade, apoiada por ferramentas como Prometheus, Grafana e OpenTelemetry ou APM, será utilizada para avaliar a degradação e a resiliência dos cenários. Os resultados experimentais ainda não foram produzidos e não devem ser antecipados neste repositório.
 
 ## Autores
 
@@ -80,4 +87,3 @@ As fontes consultadas e utilizadas no trabalho devem ser registradas em [`citati
 ## Estado atual
 
 O repositório contém a estrutura inicial do artigo, baseada no template do Instituto de Ciências Exatas e de Informática da PUC Minas, além do mecanismo Docker para compilação. O conteúdo acadêmico e o backend ainda estão em desenvolvimento.
-
