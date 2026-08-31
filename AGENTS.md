@@ -183,3 +183,11 @@ Não invente regras, números ou edições de normas da ABNT. Caso não seja pos
 - Defina termos técnicos na primeira vez em que forem relevantes.
 - Utilize terminologia consistente ao longo do documento.
 - Evite afirmações vagas, promocionais ou sem fundamentação.
+
+## Estilo de escrita
+
+- Escreva de forma acadêmica, clara e natural, com variação de ritmo e de extensão entre os períodos.
+- Evite construções formulaicas, enumerações artificiais e transições genéricas que deem ao texto aparência automatizada.
+- Não use travessões como recurso estilístico recorrente. Prefira vírgulas, pontos, dois-pontos ou parênteses quando forem mais adequados à relação entre as ideias.
+- Preserve a voz dos autores, com redação objetiva e impessoal, sem buscar uma formalidade excessivamente rígida ou artificial.
+- Revise cada parágrafo para garantir encadeamento lógico, precisão dos termos e fluidez de leitura em português brasileiro.
