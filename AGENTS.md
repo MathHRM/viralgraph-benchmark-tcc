@@ -169,6 +169,7 @@ Quando houver aparente conflito entre o template e uma regra geral da ABNT:
 Todas as citações e referências devem:
 
 - seguir as normas da ABNT vigentes em 2026;
+- exibir o ano da publicação no corpo do texto; nas citações narrativas, usar o comando LaTeX apropriado para produzir `Autor (ano)` em vez de escrever apenas o nome do autor;
 - manter correspondência entre a citação presente no texto e a referência bibliográfica;
 - apresentar dados bibliográficos completos e verificáveis;
 - utilizar um padrão consistente em todo o documento;

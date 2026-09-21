@@ -118,7 +118,7 @@
 - **DOI:** [10.1016/j.jss.2022.111225](https://doi.org/10.1016/j.jss.2022.111225).
 - **Data de acesso:** 30 ago. 2026.
 - **Fundamenta:** testes com cargas realistas e comparação controlada de configurações para análise de desempenho e escalabilidade.
-- **Status:** citada no artigo.
+- **Status:** consultada; não citada na versão atual do artigo.
 
 ### Cabane e Farias (2024)
 

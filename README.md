@@ -67,8 +67,17 @@ Por padrão, o script:
 1. utiliza a pasta `artigo/` como fonte;
 2. procura o arquivo `principal.tex`;
 3. compila o documento com `latexmk` dentro do Docker;
-4. grava o PDF na raiz com o nome `artigo-vN.pdf`, incrementando `N` quando já existir uma versão;
-5. remove a versão imediatamente anterior somente depois que a nova compilação for concluída.
+4. grava o primeiro PDF como `artigo-v1.0.pdf`;
+5. incrementa o patch a cada nova renderização, por exemplo, de `artigo-v1.0.pdf` para `artigo-v1.1.pdf`;
+6. remove a versão anterior somente depois que a nova compilação for concluída.
+
+Para incrementar a versão principal e reiniciar o patch, use `-v` ou `--version`:
+
+```bash
+./scripts/render-latex.sh --version
+```
+
+Por exemplo, se o PDF atual for `artigo-v1.3.pdf`, o novo arquivo será `artigo-v2.0.pdf`. Arquivos no formato antigo, como `artigo-v7.pdf`, são interpretados como `v7.0`.
 
 Também é possível informar a pasta do documento e o diretório de saída:
 
