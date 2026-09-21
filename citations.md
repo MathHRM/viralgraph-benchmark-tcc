@@ -1,5 +1,65 @@
 ## Fontes consultadas e citadas
 
+### Karabey Aksakalli et al. (2021)
+
+- **Título:** *Deployment and Communication Patterns in Microservice Architectures: A Systematic Literature Review*.
+- **Autores:** Işıl Karabey Aksakalli; Turgay Çelik; Ahmet Burak Can; Bedir Tekinerdoğan.
+- **Ano e publicação:** 2021; artigo científico em *Journal of Systems and Software*, v. 180, art. 111014.
+- **DOI:** [10.1016/j.jss.2021.111014](https://doi.org/10.1016/j.jss.2021.111014).
+- **Data de acesso:** 21 set. 2026.
+- **Fundamenta:** distinção entre padrões síncronos e assíncronos de comunicação e dependência da escolha em relação ao contexto arquitetural.
+- **Status:** citada no artigo.
+
+### PHP-FPM (2026)
+
+- **Título:** *FastCGI Process Manager (FPM)*.
+- **Autor institucional:** PHP Documentation Group.
+- **Ano e tipo:** 2026; documentação oficial.
+- **URL:** [php.net/manual/en/install.fpm.php](https://www.php.net/manual/en/install.fpm.php).
+- **Data de acesso:** 21 set. 2026.
+- **Fundamenta:** gerenciamento de processos FastCGI, grupos de workers, modos de criação de processos e informações de estado.
+- **Status:** citada no artigo.
+
+### Swoole (2026)
+
+- **Título:** *Swoole Documentation*.
+- **Autor institucional:** Swoole.
+- **Ano e tipo:** 2026; documentação oficial.
+- **URL:** [wiki.swoole.com/en](https://wiki.swoole.com/en/).
+- **Data de acesso:** 21 set. 2026.
+- **Fundamenta:** mecanismo de rede para PHP baseado em eventos assíncronos e corrotinas.
+- **Status:** citada no artigo.
+
+### RabbitMQ (2026)
+
+- **Título:** *Consumer Acknowledgements and Publisher Confirms*.
+- **Autor institucional:** RabbitMQ.
+- **Ano e tipo:** 2026; documentação oficial.
+- **URL:** [rabbitmq.com/docs/confirms](https://www.rabbitmq.com/docs/confirms).
+- **Data de acesso:** 21 set. 2026.
+- **Fundamenta:** distinção entre confirmações de entrega pelo consumidor e confirmações ao publicador.
+- **Status:** citada no artigo.
+
+### Neo4j (2026)
+
+- **Título:** *Database Transactions*.
+- **Autor institucional:** Neo4j.
+- **Ano e tipo:** 2026; documentação oficial.
+- **URL:** [neo4j.com/docs/operations-manual/current/database-internals/transaction-management](https://neo4j.com/docs/operations-manual/current/database-internals/transaction-management/).
+- **Data de acesso:** 21 set. 2026.
+- **Fundamenta:** fronteiras transacionais das operações no grafo e divisão de atualizações muito grandes.
+- **Status:** citada no artigo.
+
+### MySQL (2026)
+
+- **Título:** *MySQL 8.4 Reference Manual: START TRANSACTION, COMMIT, and ROLLBACK Statements*.
+- **Autor institucional:** Oracle.
+- **Ano e tipo:** 2026; documentação oficial.
+- **URL:** [dev.mysql.com/doc/refman/8.4/en/commit.html](https://dev.mysql.com/doc/refman/8.4/en/commit.html).
+- **Data de acesso:** 21 set. 2026.
+- **Fundamenta:** início, confirmação e reversão de transações no MySQL.
+- **Status:** citada no artigo.
+
 ### Piva, Ribeiro e Mata (2021)
 
 - **Título:** *Networks with Growth and Preferential Attachment: Modelling and Applications*.
