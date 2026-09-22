@@ -46,7 +46,7 @@ Regras obrigatórias:
 - O conteúdo produzido deve manter linguagem acadêmica, clara, objetiva e impessoal.
 - Não inventar resultados, experimentos, métricas, referências ou conclusões.
 
-Ao gerar versões do artigo com `scripts/render-latex.sh`, o script deve remover, após uma compilação bem-sucedida, todas as versões antigas do mesmo documento e manter somente o PDF recém-gerado. Não restaurar versões antigas automaticamente após a execução do script.
+Ao gerar versões do artigo com `scripts/render-latex.sh`, execute o script normalmente para incrementar apenas o patch. Use `-v` ou `--version` para incrementar a versão principal somente quando o usuário solicitar isso explicitamente. Após uma compilação bem-sucedida, o script deve remover todas as versões antigas do mesmo documento e manter somente o PDF recém-gerado. Não restaurar versões antigas automaticamente após a execução do script.
 
 ### Código-fonte
 
