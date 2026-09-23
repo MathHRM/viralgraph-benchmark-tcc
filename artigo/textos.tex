@@ -66,6 +66,81 @@ Sob carga, latência é o tempo transcorrido para concluir uma operação, e vaz
 
 Em síntese, os três estudos oferecem fundamentos para controlar a dinâmica temporal, comparar estilos arquiteturais e interpretar diferenças entre bancos. No conjunto selecionado, entretanto, não foi identificada uma avaliação que transforme propriedades topológicas de cascatas sociais em estímulo controlado para comparar uma composição síncrona e outra orientada a eventos. Este trabalho busca atender a essa lacuna ao relacionar a propagação simulada aos sinais de infraestrutura, sem antecipar resultados nem atribuir eventual comportamento a uma tecnologia isolada.
 
+\estrutura\section{\esp Metodologia}
+
+Esta seção descreve a classificação da pesquisa, as etapas planejadas, as ferramentas empregadas e o desenho experimental adotado para a comparação das arquiteturas. A metodologia foi estruturada para permitir a replicação dos experimentos e a análise controlada dos dados coletados.
+
+\estrutura\subsection{\esp Classificação da pesquisa}
+
+A pesquisa pode ser classificada sob diferentes critérios, conforme as dimensões propostas por \citeonline{gil2022} e \citeonline{wazlawick2021}. Quanto à abordagem, o estudo é quantitativo, pois mensura variáveis numéricas como latência, vazão, utilização de recursos, tamanho de filas e tempo de drenagem, submetendo-as a tratamento estatístico. Quanto à natureza, trata-se de uma pesquisa aplicada, uma vez que visa gerar conhecimento diretamente utilizável na avaliação e no projeto de sistemas backend submetidos a estresse. Quanto aos objetivos, a pesquisa é explicativa, pois busca identificar fatores que determinam o comportamento observado nas arquiteturas e as relações entre variáveis de carga, topologia e desempenho. Quanto aos procedimentos técnicos, o trabalho pode ser classificado como experimental, pois submeterá duas composições arquiteturais a condições controladas de estímulo para observar e comparar seus comportamentos.
+
+\estrutura\subsection{\esp Etapas da pesquisa}
+
+O desenvolvimento do trabalho está estruturado em cinco etapas, ilustradas na Figura \ref{fig:fluxograma-metodologia}. A primeira etapa consiste no levantamento bibliográfico e na fundamentação teórica, abrangendo teoria dos grafos, cascatas de informação, arquiteturas backend e observabilidade. A segunda etapa compreende a modelagem de redes sociais como grafos dirigidos e a especificação de cascatas com diferentes distribuições de conectividade e concentrações de grau de saída. A terceira etapa envolve a implementação das duas arquiteturas, a configuração do ambiente de execução e o desenvolvimento de geradores de carga capazes de reproduzir picos controlados de compartilhamento. A quarta etapa corresponde à execução dos experimentos, com coleta sistemática de métricas de recursos, latência, vazão, erros, filas, persistência e rastreamento distribuído. Por fim, a quinta etapa dedica-se à análise comparativa dos resultados, à identificação de padrões de degradação e recuperação e à síntese das conclusões.
+
+% Figura 1 - Fluxograma das Etapas
+\begin{figure}[H]
+	\centering
+	\caption{Fluxograma das etapas da pesquisa}
+	\label{fig:fluxograma-metodologia}
+	\vspace{-0.3cm}
+	\includegraphics[width=0.85\textwidth,height=0.35\textheight,keepaspectratio]{figuras/Etapa de Levantamento e-2026-09-23-234529.png}
+	\vspace{0.2cm}
+	\textbf{\footnotesize Fonte: Elaborada pelo autor}
+\end{figure}
+\vspace{-0.5cm}
+
+\estrutura\subsection{\esp Ferramentas e tecnologias}
+
+O ambiente de desenvolvimento e experimentação é constituído pelas ferramentas e tecnologias apresentadas no Quadro \ref{qua:ferramentas}. A escolha de cada componente justifica-se pela aderência aos objetivos do trabalho e pela disponibilidade de suporte a instrumentação e observabilidade.
+
+\begin{quadro}[H]
+    \centering
+    \caption{Ferramentas e tecnologias do ambiente experimental}
+    \label{qua:ferramentas}
+    \begin{tabular}{|C{3.5cm}|C{5cm}|C{3cm}|}
+    \hline
+    \textbf{Categoria} & \textbf{Ferramenta} & \textbf{Função} \\ \hline
+    Geração de carga & k6 & Simulação de requisições HTTP \\ \hline
+    Backend assíncrono & PHP Swoole / Hyperf & Servidor orientado a eventos \\ \hline
+    Backend síncrono & PHP-FPM / Laravel & Servidor síncrono \\ \hline
+    Banco de dados (grafos) & Neo4j & Persistência orientada a grafos \\ \hline
+    Banco de dados (relacional) & MySQL & Persistência relacional \\ \hline
+    Message broker & RabbitMQ & Intermediação de mensagens \\ \hline
+    Coleta de métricas & Prometheus & Armazenamento de séries temporais \\ \hline
+    Visualização & Grafana & Dashboards e alertas \\ \hline
+    Rastreamento distribuído & OpenTelemetry & Geração e exportação de rastros \\ \hline
+    Conteinerização & Docker & Isolamento e orquestração de serviços \\ \hline
+    \end{tabular}
+    \vspace{0.1cm}
+    \small
+    {\footnotesize \\textbf{Fonte: Elaborado pelo autor}}
+\end{quadro}
+
+O k6 será utilizado para gerar cargas que simulam cascatas de compartilhamento, permitindo controlar o volume, a distribuição temporal e a concentração de requisições em curtos intervalos. O PHP-FPM e o Laravel comporão a arquitetura síncrona, enquanto o Swoole e o Hyperf comporão a arquitetura orientada a eventos. O MySQL receberá a persistência da arquitetura síncrona, e o Neo4j, da arquitetura assíncrona. O RabbitMQ atuará como intermediador de mensagens na arquitetura orientada a eventos. Prometheus, Grafana e OpenTelemetry constituirão a plataforma de observabilidade, responsável pela coleta, armazenamento, visualização e correlação dos sinais produzidos pelos sistemas sob teste. O Docker será empregado para isolar e orquestrar os componentes, garantindo reprodutibilidade do ambiente experimental.
+
+\estrutura\subsection{\esp Desenho experimental}
+
+O desenho experimental está centrado na simulação de cascatas de informação derivadas de propriedades topológicas de redes sociais. Redes serão modeladas como grafos dirigidos, e cascatas serão geradas a partir de nós selecionados com diferentes graus de saída, produzindo padrões de propagação que variam em profundidade, largura e velocidade. O gerador de carga, implementado com k6, produzirá requisições que representam compartilhamentos, respeitando a evolução temporal das cascatas e a concentração de eventos em nós com alto grau.
+
+As duas arquiteturas serão submetidas ao mesmo estímulo, definido por parâmetros como tamanho da rede, distribuição de grau, profundidade máxima da cascata, probabilidade de compartilhamento e ritmo de propagação. A cada execução, serão coletadas métricas de latência (p50, p95, p99), vazão, taxa de erros, utilização de CPU e memória, tamanho do backlog de mensagens e tempo de drenagem das filas. Rastros distribuídos permitirão correlacionar requisições, mensagens e operações de persistência ao longo do tempo.
+
+A Figura \ref{fig:arquiteturas-comparadas} apresenta, de forma esquemática, as duas composições arquiteturais que serão comparadas. A arquitetura síncrona processa cada requisição de forma bloqueante, com persistência imediata. A arquitetura orientada a eventos desacopla a aceitação da requisição do processamento subsequente, utilizando filas e workers para ingestão em lotes.
+
+% Figura 2 - Diagrama das Arquiteturas Comparadas
+\begin{figure}[H]
+	\centering
+	\caption{Diagrama comparativo das arquiteturas}
+	\label{fig:arquiteturas-comparadas}
+	\vspace{-0.3cm}
+	\includegraphics[width=0.95\textwidth]{figuras/Event-Driven Architecture-2026-09-23-234454.png}
+	\vspace{0.2cm}
+	\textbf{\footnotesize Fonte: Elaborada pelo autor}
+\end{figure}
+\vspace{-0.5cm}
+
+Os experimentos serão organizados em cenários que variam a concentração de grau de saída dos iniciadores, o tamanho das cascatas e a intensidade do pico. Cada cenário será repetido múltiplas vezes para permitir análise estatística. Os parâmetros específicos, como quantidade de usuários simulados, duração dos testes e configurações de hardware, serão definidos na seção de desenvolvimento e mantidos constantes entre as duas arquiteturas para assegurar a equivalência da comparação.
+
 \iffalse
 
 %\textcolor{red}{\textbf{Importante:}} mantenha atualizada a versão do TeX Live. No Overleaf, escolha o "motor" de compilação no menu \texttt{File >\allowbreak\ Settings >\allowbreak\ Compiler >\allowbreak\ TeX Live version >\allowbreak\ selecione a mais atual}. Ex.: 2025.
