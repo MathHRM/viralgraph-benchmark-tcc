@@ -41,7 +41,7 @@ digraph fluxo_arquiteturas {
         cliente_e [label="Cliente"];
         servidor_e [label="Servidor e\naplicação\n(Swoole /\nHyperf)"];
         fila_e [label="Fila de\nmensagens\n(RabbitMQ)"];
-        workers_e [label="Workers"];
+        workers_e [label="Processador\nde tarefas\n(worker)"];
         banco_e [label="Banco de dados\nem nós e\nconexões\n(Neo4j)"];
 
         cliente_e -> servidor_e;
