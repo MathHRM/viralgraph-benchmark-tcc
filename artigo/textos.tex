@@ -10,61 +10,143 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \estrutura\section{\esp Introdução}
 
-Redes sociais permitem que conteúdos se propaguem rapidamente entre usuários e produzam variações intensas no volume de interação. A disseminação decorre das características do conteúdo e das decisões sucessivas de compartilhá-lo, enquanto a posição do usuário na rede condiciona o alcance potencial de cada publicação. Quando um conteúdo alcança usuários com grande capacidade de disseminação, compartilhamentos sucessivos podem gerar picos de requisições, processamento e persistência. A estrutura dessas cascatas não se reduz ao total de compartilhamentos, pois a dinâmica também varia ao longo da propagação \cite{liang2021,sepehr2022}. A teoria dos grafos permite representar as relações entre usuários, identificar posições estruturalmente relevantes e descrever esse processo. Neste trabalho, a rede social será modelada como um grafo dirigido, e o grau de saída será adotado como medida operacional do alcance potencial dos iniciadores, sem pressupor equivalência com influência efetiva \cite{zareie2023}. As cascatas serão representadas separadamente, por meio dos usuários que compartilharam o conteúdo e das exposições que antecederam cada compartilhamento. Essa representação orientará a geração de cargas que considerem o volume, a distribuição e a evolução temporal dos eventos.
+Redes sociais permitem que conteúdos se propaguem rapidamente entre usuários e produzam variações intensas no volume de interação. A disseminação decorre das características do conteúdo e das decisões sucessivas de compartilhá-lo, enquanto a posição do usuário na rede condiciona o alcance potencial de cada publicação. Quando um conteúdo alcança usuários com grande capacidade de disseminação, compartilhamentos sucessivos podem gerar picos de requisições, processamento e persistência \cite{liang2021,sepehr2022}. A teoria dos grafos permite representar as relações entre usuários e identificar posições estruturalmente relevantes. Neste trabalho, a rede social será modelada como um grafo dirigido, e o grau de saída será adotado como medida operacional do alcance potencial dos iniciadores, sem pressupor equivalência com influência efetiva \cite{zareie2023}.
 
-O problema desta pesquisa consiste em investigar como diferentes arquiteturas \textit{backend} respondem ao estresse gerado por cascatas de informação em redes sociais. A investigação é orientada pela seguinte pergunta: como a topologia da rede e a concentração de influência em nós com alto grau de saída afetam o desempenho, a formação de filas, a utilização de recursos e a resiliência de duas composições arquiteturais, uma predominantemente síncrona e outra orientada a eventos, quando submetidas ao mesmo padrão simulado de viralização? A comparação considera uma arquitetura síncrona, baseada em PHP-FPM, Laravel e MySQL, com fluxo síncrono e persistência transacional linha a linha, e uma arquitetura orientada a eventos, baseada em PHP com Swoole/Hyperf, RabbitMQ e Neo4j, com processamento assíncrono, filas e ingestão em lotes por \textit{workers}.
+O problema consiste em investigar como diferentes arquiteturas \textit{backend} respondem ao estresse gerado por cascatas de informação em redes sociais. A comparação considera uma arquitetura síncrona, baseada em PHP-FPM, Laravel e MySQL, com fluxo síncrono e persistência transacional linha a linha, e uma arquitetura orientada a eventos, baseada em PHP com Swoole/Hyperf, RabbitMQ e Neo4j, com processamento assíncrono, filas e ingestão em lotes por processadores de tarefas.
 
-A relevância do estudo está em aproximar propriedades estruturais da rede das consequências observáveis na infraestrutura de software. Medidas como alcance, profundidade, largura e velocidade descrevem aspectos dependentes entre si e, por isso, requerem controle conjunto na comparação de cascatas \cite{juul2021}. Além disso, formas distintas de difusão podem produzir padrões diferentes de requisições e escritas persistentes \cite{sepehr2022}. A avaliação conjunta de grafos, carga e observabilidade pode, portanto, oferecer uma análise experimental mais precisa da degradação e da resiliência das arquiteturas, sem restringir a comparação ao tempo de resposta nem pressupor a superioridade de uma composição.
+A relevância do estudo está em aproximar propriedades estruturais da rede das consequências observáveis na infraestrutura de software. Medidas como alcance, profundidade, largura e velocidade requerem controle conjunto na comparação de cascatas \cite{juul2021}. A avaliação conjunta de grafos, carga e observabilidade pode oferecer uma análise experimental mais precisa da degradação e da resiliência das arquiteturas, sem restringir a comparação ao tempo de resposta nem pressupor a superioridade de uma composição.
 
-O objetivo geral é analisar comparativamente o comportamento de duas composições arquiteturais completas, uma síncrona e outra orientada a eventos, durante a simulação de cascatas de informação associadas à viralização em redes sociais. O estudo não busca isolar o efeito individual de cada tecnologia, mas comparar as composições sob condições equivalentes de carga. Para alcançá-lo, são definidos os seguintes objetivos específicos: i) modelar redes e cascatas com diferentes distribuições de conectividade e concentrações de grau de saída; ii) implementar geradores de carga capazes de reproduzir picos controlados de compartilhamento; iii) submeter as duas arquiteturas ao mesmo estímulo; iv) coletar métricas de recursos, latência, \textit{throughput}, erros, filas, persistência e rastreamento distribuído; e v) comparar saturação, degradação, drenagem das filas e recuperação após o pico. Os parâmetros e critérios que assegurarão a equivalência dos experimentos serão definidos na metodologia antes de sua execução.
+O objetivo geral é analisar comparativamente o comportamento de duas composições arquiteturais completas durante a simulação de cascatas de informação associadas à viralização. Para alcançá-lo, são definidos os seguintes objetivos específicos: i) modelar redes e cascatas com diferentes distribuições de conectividade; ii) implementar geradores de carga capazes de reproduzir picos controlados; iii) submeter as duas arquiteturas ao mesmo estímulo; iv) coletar métricas de recursos, latência, vazão, erros, filas e rastreamento distribuído; e v) comparar saturação, degradação e recuperação após o pico.
 
-O restante deste artigo está organizado da seguinte forma: o referencial teórico define os conceitos de redes, cascatas, arquiteturas e observabilidade empregados na pesquisa; a seção de trabalhos relacionados examina estudos próximos à comparação proposta; a metodologia descreve a classificação da pesquisa, o desenho experimental, o modelo de carga e os procedimentos de coleta e análise dos dados; a seção de desenvolvimento apresenta a implementação das arquiteturas e dos mecanismos de simulação e observabilidade; os resultados apresentam e discutem os dados obtidos nos experimentos; e, por fim, as considerações finais sintetizam as conclusões, as limitações e as possibilidades de trabalhos futuros.
+O restante deste artigo está organizado da seguinte forma: o referencial teórico define os conceitos de redes, cascatas, arquiteturas e observabilidade; a seção de trabalhos relacionados examina estudos próximos à comparação proposta; a metodologia descreve a classificação da pesquisa e o desenho experimental; os resultados apresentam os dados obtidos; e as considerações finais sintetizam as conclusões.
 
 \estrutura\section{\esp Referencial Teórico}
 
-Esta seção reúne os conceitos necessários para relacionar a estrutura das redes sociais ao comportamento das duas composições arquiteturais sob carga. A exposição parte da representação da rede e da propagação da informação, caracteriza os fluxos síncrono e orientado a eventos e, por fim, delimita os sinais e indicadores usados para observar a resposta dos sistemas.
+Esta seção reúne os conceitos necessários para relacionar a estrutura das redes sociais ao comportamento das duas composições arquiteturais sob carga.
 
 \estrutura\subsection{\esp Redes sociais e teoria dos grafos}
 
-Um grafo é uma estrutura formada por vértices e arestas: no domínio deste estudo, cada vértice representa um usuário e cada aresta dirigida representa uma relação pela qual um conteúdo pode alcançar outro usuário. O grau de um vértice corresponde ao número de arestas que incidem nele; em grafos dirigidos, o grau de saída contabiliza as conexões que partem do usuário. Redes que crescem por conexão preferencial podem concentrar muitas relações em poucos vértices, produzindo distribuições desiguais de conectividade \cite{piva2021}. A centralidade designa uma família de medidas empregadas para caracterizar a posição estrutural dos vértices. Neste trabalho, o grau de saída será uma variável operacional de centralidade, e o alcance indicará quantos usuários podem ser atingidos a partir de um iniciador. Influência, por sua vez, será entendida como a capacidade efetiva de induzir comportamentos, não como sinônimo automático de conectividade, pois atributos comportamentais e o modelo de difusão também afetam a propagação \cite{zareie2023}.
+Um grafo é uma estrutura formada por vértices e arestas: no domínio deste estudo, cada vértice representa um usuário e cada aresta dirigida representa uma relação pela qual um conteúdo pode alcançar outro usuário. O grau de saída contabiliza as conexões que partem do usuário. Redes que crescem por conexão preferencial podem concentrar muitas relações em poucos vértices, produzindo distribuições desiguais de conectividade \cite{piva2021}. Neste trabalho, o grau de saída será uma variável operacional de centralidade, e o alcance indicará quantos usuários podem ser atingidos a partir de um iniciador. Influência será entendida como a capacidade efetiva de induzir comportamentos, não como sinônimo automático de conectividade \cite{zareie2023}.
 
-Propagação é o processo pelo qual a informação percorre as relações da rede. Uma cascata de informação é o subgrafo formado pelos compartilhamentos de um conteúdo e pelas exposições que os antecedem. Sua profundidade é a maior distância, em gerações de compartilhamento, entre o iniciador e um participante; sua largura corresponde à quantidade de ocorrências em uma mesma geração. O alcance contabiliza os participantes ou expostos, enquanto a forma da cascata distingue, por exemplo, uma difusão ampla e rasa de outra distribuída por várias gerações. Essa distinção é necessária porque cascatas de tamanhos semelhantes podem possuir estruturas e mecanismos de difusão diferentes \cite{sepehr2022,juul2021}.
+Uma cascata de informação é o subgrafo formado pelos compartilhamentos de um conteúdo e pelas exposições que os antecedem. Sua profundidade é a maior distância, em gerações, entre o iniciador e um participante; sua largura corresponde à quantidade de ocorrências em uma mesma geração. Cascatas de tamanhos semelhantes podem possuir estruturas e mecanismos de difusão diferentes \cite{sepehr2022,juul2021}.
 
 \estrutura\subsection{\esp Viralização e efeito manada}
 
-Viralização corresponde, neste trabalho, à disseminação rápida e ampla de um conteúdo por sucessivos compartilhamentos. O chamado efeito manada descreve a tendência de uma pessoa adotar um comportamento após observar a adesão de outras, de modo que a exposição social pode alterar a probabilidade de compartilhar. A posição topológica do iniciador condiciona o público que pode ser alcançado, mas métricas puramente estruturais não explicam, isoladamente, a decisão de retransmitir. Estudos recentes mostram que fatores relacionados ao usuário, à mensagem e à geração da cascata modificam os efeitos de contágio, inclusive com variação ao longo da profundidade \cite{liang2021}; por isso, alto grau de saída será tratado como alcance potencial, e não como prova de influência.
-
-A literatura também adverte que tamanho, profundidade, largura e evolução temporal não devem ser interpretados como dimensões independentes. O pareamento apenas pelo tamanho pode ocultar diferenças relevantes na estrutura das cascatas \cite{juul2021}, enquanto medidas de virulência estrutural procuram representar como a difusão se distribui entre transmissões diretas e sucessivas gerações \cite{sepehr2022}. Assim, a carga experimental deverá controlar tanto o volume total quanto a distribuição temporal e topológica dos eventos. O uso do termo efeito manada, portanto, não pressupõe que toda exposição resulte em adesão; ele delimita o mecanismo social simulado que poderá produzir concentração de eventos em curto intervalo.
+Viralização corresponde à disseminação rápida e ampla de um conteúdo por sucessivos compartilhamentos. O efeito manada descreve a tendência de uma pessoa adotar um comportamento após observar a adesão de outras. A posição topológica do iniciador condiciona o público que pode ser alcançado, mas métricas estruturais não explicam, isoladamente, a decisão de retransmitir \cite{liang2021}. Tamanho, profundidade, largura e evolução temporal não devem ser interpretados como dimensões independentes \cite{juul2021}. O uso do termo efeito manada delimita o mecanismo social simulado que poderá produzir concentração de eventos em curto intervalo.
 
 \estrutura\subsection{\esp Arquitetura síncrona}
 
-Na comunicação síncrona por requisição e resposta, um cliente envia uma solicitação e aguarda a conclusão do processamento para receber o resultado. Revisões sobre padrões de comunicação em microsserviços distinguem esse acoplamento temporal dos padrões assíncronos e mostram que a escolha do padrão depende do contexto e de seus desafios operacionais \cite{aksakalli2021}. Na primeira composição deste estudo, o PHP-FPM gerencia processos FastCGI em grupos de \textit{workers}, com modos configuráveis de criação de processos e informações de estado apropriadas à operação sob carga \cite{phpfpm2026}. O Laravel recebe a requisição, aplica as regras da operação e coordena o acesso ao MySQL antes de produzir a resposta.
-
-A persistência relacional organiza os dados em tabelas e relacionamentos definidos por chaves. A expressão ``linha a linha'' identifica que cada evento de compartilhamento gera operações individuais de inserção ou atualização, ainda que várias operações possam pertencer à mesma transação. Uma transação delimita uma unidade de trabalho concluída por confirmação, que torna permanentes as alterações, ou por reversão, que as cancela \cite{mysql2026}. Nessa composição, o tempo percebido pelo cliente inclui o processamento da aplicação e a persistência necessária à resposta; sob aumento de concorrência, requisições podem aguardar processos, conexões ou recursos do banco. Essas relações constituem hipóteses a observar, não resultados antecipados.
+Na comunicação síncrona, o cliente envia uma solicitação e permanece em espera até que todo o processamento seja concluído e o resultado lhe seja devolvido \cite{aksakalli2021}. Na primeira composição avaliada neste estudo, a aplicação é construída com o \textit{framework} Laravel e executada sobre o servidor PHP-FPM, responsável por receber as requisições e mantê-las em atendimento até que a resposta esteja pronta \cite{phpfpm2026}. Ao receber cada solicitação, a aplicação aplica as regras da operação e registra o resultado no banco de dados MySQL, que organiza as informações em tabelas relacionadas entre si. O registro segue o mecanismo de transação: os dados só se tornam permanentes se a gravação for concluída por inteiro; caso contrário, ela é desfeita, o que impede o armazenamento de informações incompletas \cite{mysql2026}. Nessa composição, o tempo percebido pelo cliente corresponde, portanto, à soma do processamento da aplicação e da gravação necessária à resposta.
 
 \estrutura\subsection{\esp Arquitetura orientada a eventos}
 
-Em uma arquitetura orientada a eventos, mudanças relevantes são representadas como eventos e publicadas para processamento por componentes desacoplados no tempo. Swoole fornece ao PHP um mecanismo de rede baseado em eventos assíncronos e corrotinas, sobre o qual o Hyperf estrutura a aplicação \cite{swoole2026}. O produtor cria a mensagem; o RabbitMQ atua como intermediador e a armazena em uma fila; o consumidor a recebe; e um \textit{worker}, isto é, um processo responsável por executar unidades de trabalho, realiza o processamento. A requisição pode terminar depois da aceitação do evento, sem aguardar toda a persistência subsequente, razão pela qual latência de aceitação e latência de processamento completo deverão ser medidas separadamente.
+Em uma arquitetura orientada a eventos, o sistema confirma o recebimento da solicitação com rapidez e transfere o processamento mais demorado para execução posterior, a cargo de componentes independentes entre si. Na segunda composição avaliada neste estudo, a aplicação é construída com o \textit{framework} Hyperf e executada sobre o servidor Swoole, que atende muitas solicitações simultâneas sem aguardar a conclusão de cada operação \cite{swoole2026}. Cada solicitação relevante é convertida em mensagem e entregue ao RabbitMQ, serviço intermediário que a mantém em uma fila até distribuí-la aos processadores de tarefas (\textit{workers}), programas que executam as tarefas e efetivam a gravação dos dados. A resposta ao cliente pode, assim, ser devolvida logo após o registro da mensagem, sem esperar todo o processamento subsequente \cite{rabbitmq2026}. O contraste entre esse fluxo de atendimento e o descrito na seção anterior está ilustrado na Figura \ref{fig:fluxo-arquiteturas}.
 
-Processamento assíncrono significa que produção e consumo não precisam ocorrer simultaneamente. Quando a chegada supera temporariamente a capacidade dos consumidores, mensagens pendentes formam um \textit{backlog}. O processamento em lote agrupa várias mensagens em uma operação de persistência, reduzindo a quantidade de interações com o banco, mas introduzindo critérios de tamanho e tempo para formar cada lote. No RabbitMQ, a confirmação do consumidor informa que uma entrega foi processada, enquanto a confirmação do publicador indica que o intermediador assumiu responsabilidade pela mensagem; são mecanismos distintos e necessários à definição explícita da confiabilidade \cite{rabbitmq2026}.
+% Figura - Fluxo de atendimento das arquiteturas (placeholder até a versão final do diagrama)
+\begin{figure}[H]
+	\centering
+	\caption{Fluxo de atendimento das arquiteturas síncrona e orientada a eventos}
+	\label{fig:fluxo-arquiteturas}
+	\vspace{-0.3cm}
+	\includegraphics[width=0.95\textwidth]{figuras/fluxo-arquiteturas.png}
+	\vspace{0.2cm}
 
-O Neo4j representa entidades como nós e relações como conexões de primeira classe. Nesta composição, usuários e compartilhamentos podem ser persistidos segundo a topologia que será percorrida nas análises. Operações no grafo, nos índices ou no esquema ocorrem em transações, e atualizações muito grandes precisam ser divididas para limitar o consumo de memória \cite{neo4j2026}. A ingestão em lotes não elimina, portanto, a fronteira transacional: ela altera a quantidade de eventos reunidos em cada unidade de persistência. A comparação será feita entre composições completas, sem atribuir antecipadamente eventual diferença a uma tecnologia isolada.
+	{\footnotesize \textbf{Fonte: Elaborada pelo autor}}
+\end{figure}
+
+A persistência definitiva é realizada no Neo4j, banco que, em vez de tabelas, armazena os dados como nós e conexões, representação próxima do domínio de redes sociais deste trabalho \cite{neo4j2026}. Para dar conta de grande volume de mensagens em curto intervalo, os processadores de tarefas reúnem vários eventos em um mesmo lote antes de gravá-los, prática denominada ingestão em lotes, que reduz o custo de cada gravação. Contudo, lotes excessivamente grandes elevam o consumo de memória e atualizações muito extensas precisam ser divididas em unidades menores \cite{neo4j2026}.
 
 \estrutura\subsection{\esp Observabilidade sob carga}
+\label{subsec:observabilidade}
 
-Observabilidade é a capacidade de inferir o estado interno de um sistema a partir dos sinais que ele produz. Métricas são séries numéricas agregadas; \textit{logs} são registros discretos de eventos com seu contexto; e rastreamento distribuído acompanha uma operação pelas etapas e componentes que a processam. A correlação temporal e por identificadores entre esses sinais permite relacionar alterações de desempenho a requisições, mensagens, \textit{workers} e operações de persistência \cite{tzanettis2022}. O OpenTelemetry será empregado como estrutura independente de fornecedor para gerar, coletar e exportar esses sinais, sem substituir os sistemas responsáveis por armazená-los e visualizá-los \cite{opentelemetry2026}.
+Observabilidade é a capacidade de inferir o estado interno de um sistema a partir dos sinais que ele produz. Métricas são séries numéricas agregadas; \textit{logs} são registros discretos de eventos; e rastreamento distribuído acompanha uma operação pelas etapas e componentes que a processam \cite{tzanettis2022}. O OpenTelemetry será empregado como estrutura independente de fornecedor para gerar e exportar esses sinais \cite{opentelemetry2026}.
 
-Sob carga, latência é o tempo transcorrido para concluir uma operação, e vazão é a quantidade de operações concluídas por unidade de tempo. Como médias podem ocultar ocorrências extremas, percentis como p50, p95 e p99 indicarão os limites abaixo dos quais se encontram, respectivamente, 50\%, 95\% e 99\% das observações. A taxa de erros expressará a proporção de operações malsucedidas; saturação caracterizará o ponto em que um recurso se aproxima de sua capacidade e o aumento de demanda passa a intensificar espera ou falhas. Na composição assíncrona, o tamanho do \textit{backlog} quantificará mensagens ainda não concluídas e o tempo de drenagem medirá o intervalo necessário para processar a fila remanescente após o encerramento do pico. Esses indicadores, juntamente com CPU, memória e duração da persistência, são variáveis planejadas para os experimentos e não constituem resultados já obtidos.
+Sob carga, a latência é o tempo que o sistema leva para concluir uma operação, e a vazão é a quantidade de operações concluídas por unidade de tempo. Como as operações não demoram todas o mesmo tempo, a latência de cada cenário será resumida em percentis: o p50 corresponde ao limite que metade das operações não ultrapassa, enquanto o p95 e o p99 evidenciam os momentos mais críticos, pois indicam o limite superado apenas pelos 5% e pelos 1% de operações mais lentas. Na composição orientada a eventos, duas medidas complementares acompanharão a fila: o tamanho do \textit{backlog}, isto é, a quantidade de mensagens recebidas e ainda não processadas, e o tempo de drenagem, o intervalo necessário para concluir a fila remanescente após o encerramento do pico.
 
 \estrutura\section{\esp Trabalhos Relacionados}
 
-\citeonline{abella2023} analisaram o efeito do envelhecimento dos agentes na dinâmica temporal de cascatas por meio de um modelo de limiar para contágio complexo. O método incorporou diferentes mecanismos de envelhecimento e avaliou como eles alteram a evolução macroscópica do processo. O estudo contribui ao distinguir as condições de ocorrência da cascata de sua velocidade de propagação. Assim como este TCC, considera que a distribuição temporal dos eventos é relevante; diferentemente dele, concentra-se na dinâmica do modelo social, e não na resposta de arquiteturas \textit{backend} ao padrão de carga resultante.
+\citeonline{abella2023} analisaram o efeito do envelhecimento dos agentes na dinâmica temporal de cascatas. O estudo contribui ao distinguir as condições de ocorrência da cascata de sua velocidade de propagação. Diferentemente deste TCC, concentra-se na dinâmica do modelo social, e não na resposta de arquiteturas \textit{backend}.
 
-\citeonline{cabane2024} compararam empiricamente versões monolítica e orientada a eventos de uma mesma aplicação, submetendo-as a cargas e analisando CPU, memória, tempo de resposta, vazão e tráfego de rede. A contribuição está na avaliação conjunta de métricas e no tratamento estatístico das diferenças observadas. A semelhança com este TCC é a comparação experimental de composições arquiteturais sem pressupor superioridade de um estilo; a diferença está no estímulo, pois o presente estudo empregará cascatas derivadas de propriedades topológicas e também observará filas, drenagem e rastros distribuídos.
+\citeonline{cabane2024} compararam empiricamente versões monolítica e orientada a eventos de uma mesma aplicação. A semelhança com este TCC é a comparação experimental de composições arquiteturais; a diferença está no estímulo, pois o presente estudo empregará cascatas derivadas de propriedades topológicas e também observará filas e rastros distribuídos.
 
-\citeonline{kotiranta2022} compararam Neo4j, MySQL e MariaDB por meio de consultas com estruturas e complexidades distintas, considerando também índices e otimizações. O trabalho contribui ao demonstrar que o desempenho depende do tipo de consulta e da configuração, sem sustentar a superioridade universal de um modelo de dados. A semelhança está na presença de persistência relacional e orientada a grafos; a diferença é que o presente TCC avaliará ingestão durante cascatas de carga em arquiteturas completas, e não o desempenho isolado de consultas entre bancos.
+\citeonline{kotiranta2022} compararam Neo4j, MySQL e MariaDB por meio de consultas com estruturas distintas. A semelhança está na presença de persistência relacional e orientada a grafos; a diferença é que o presente TCC avaliará ingestão durante cascatas de carga em arquiteturas completas.
 
-Em síntese, os três estudos oferecem fundamentos para controlar a dinâmica temporal, comparar estilos arquiteturais e interpretar diferenças entre bancos. No conjunto selecionado, entretanto, não foi identificada uma avaliação que transforme propriedades topológicas de cascatas sociais em estímulo controlado para comparar uma composição síncrona e outra orientada a eventos. Este trabalho busca atender a essa lacuna ao relacionar a propagação simulada aos sinais de infraestrutura, sem antecipar resultados nem atribuir eventual comportamento a uma tecnologia isolada.
+Em síntese, os três estudos oferecem fundamentos para controlar a dinâmica temporal, comparar estilos arquiteturais e interpretar diferenças entre bancos. Não foi identificada uma avaliação que transforme propriedades topológicas de cascatas sociais em estímulo controlado para comparar uma composição síncrona e outra orientada a eventos.
+
+\estrutura\section{\esp Metodologia}
+
+Esta seção descreve a classificação da pesquisa, as etapas planejadas, as ferramentas empregadas e o desenho experimental adotado para a comparação das arquiteturas.
+
+\estrutura\subsection{\esp Classificação da pesquisa}
+
+A pesquisa é quantitativa, pois mensura variáveis numéricas como latência, vazão e utilização de recursos, submetendo-as a tratamento estatístico. Quanto à natureza, trata-se de uma pesquisa aplicada, pois visa gerar conhecimento utilizável na avaliação de sistemas backend submetidos a estresse. Quanto aos objetivos, é explicativa, pois busca identificar fatores que determinam o comportamento observado nas arquiteturas. Quanto aos procedimentos técnicos, o trabalho é experimental, pois submeterá duas composições arquiteturais a condições controladas de estímulo \cite{gil2022,wazlawick2021}.
+
+\estrutura\subsection{\esp Etapas da pesquisa}
+
+O desenvolvimento está estruturado em cinco etapas, ilustradas na Figura \ref{fig:fluxograma-metodologia}: i) levantamento bibliográfico e fundamentação teórica; ii) modelagem de redes sociais como grafos dirigidos e especificação de cascatas; iii) implementação das duas arquiteturas e desenvolvimento de geradores de carga; iv) execução dos experimentos e coleta de métricas; v) análise comparativa dos resultados e síntese das conclusões.
+
+% Figura 1 - Fluxograma das Etapas
+\begin{figure}[H]
+	\centering
+	\caption{Fluxograma das etapas da pesquisa}
+	\label{fig:fluxograma-metodologia}
+	\vspace{-0.3cm}
+	\includegraphics[width=0.85\textwidth,height=0.35\textheight,keepaspectratio]{figuras/Etapa de Levantamento e-2026-09-23-234529.png}
+	\vspace{0.2cm}
+	
+	{\footnotesize \textbf{Fonte: Elaborada pelo autor}}
+\end{figure}
+
+\estrutura\subsection{\esp Ferramentas e tecnologias}
+
+O ambiente experimental é constituído pelas ferramentas apresentadas no Quadro \ref{qua:ferramentas}. A escolha de cada componente justifica-se pela aderência aos objetivos do trabalho e pela disponibilidade de suporte a instrumentação.
+
+\begin{quadro}[H]
+    \centering
+    \caption{Ferramentas e tecnologias do ambiente experimental}
+    \label{qua:ferramentas}
+    \begin{tabular}{|C{3.5cm}|C{5cm}|C{3cm}|}
+    \hline
+    \textbf{Categoria} & \textbf{Ferramenta} & \textbf{Função} \\ \hline
+    Geração de carga & k6 & Simulação de requisições HTTP \\ \hline
+    Backend assíncrono & PHP Swoole / Hyperf & Servidor orientado a eventos \\ \hline
+    Backend síncrono & PHP-FPM / Laravel & Servidor síncrono \\ \hline
+    Banco de dados (grafos) & Neo4j & Persistência orientada a grafos \\ \hline
+    Banco de dados (relacional) & MySQL & Persistência relacional \\ \hline
+    Message broker & RabbitMQ & Intermediação de mensagens \\ \hline
+    Coleta de métricas & Prometheus & Armazenamento de séries temporais \\ \hline
+    Visualização & Grafana & Dashboards e alertas \\ \hline
+    Rastreamento distribuído & OpenTelemetry & Geração e exportação de rastros \\ \hline
+    Conteinerização & Docker & Isolamento e orquestração de serviços \\ \hline
+    \end{tabular}
+    
+    \vspace{0.2cm}
+    {\footnotesize \textbf{Fonte: Elaborado pelo autor}}
+\end{quadro}
+
+O k6 gerará cargas que simulam cascatas de compartilhamento. O PHP-FPM e o Laravel comporão a arquitetura síncrona, enquanto o Swoole e o Hyperf comporão a arquitetura orientada a eventos. O MySQL receberá a persistência da arquitetura síncrona, e o Neo4j, da arquitetura assíncrona. Prometheus, Grafana e OpenTelemetry constituirão a plataforma de observabilidade. O Docker será empregado para isolar e orquestrar os componentes.
+
+\estrutura\subsection{\esp Desenho experimental}
+
+O desenho experimental está centrado na simulação de cascatas derivadas de propriedades topológicas de redes sociais. Redes serão modeladas como grafos dirigidos, e cascatas serão geradas a partir de nós com diferentes graus de saída. O gerador de carga, implementado com k6, produzirá requisições que representam compartilhamentos, respeitando a evolução temporal das cascatas.
+
+As duas arquiteturas serão submetidas ao mesmo estímulo, definido por parâmetros como tamanho da rede, distribuição de grau, profundidade máxima da cascata e ritmo de propagação. Serão coletadas as medidas de desempenho definidas na Seção \ref{subsec:observabilidade}: a latência, resumida nos percentis p50, p95 e p99, e a vazão, além da taxa de erros, da utilização de CPU e de memória, do tamanho do \textit{backlog} e do tempo de drenagem das filas. Rastros distribuídos permitirão correlacionar requisições, mensagens e operações de persistência.
+
+A Figura \ref{fig:arquiteturas-comparadas} apresenta as duas composições arquiteturais. A arquitetura síncrona processa cada requisição de forma bloqueante, com persistência imediata. A arquitetura orientada a eventos desacopla a aceitação da requisição do processamento subsequente, utilizando filas e processadores de tarefas para ingestão em lotes.
+
+% Figura 2 - Diagrama das Arquiteturas Comparadas
+\begin{figure}[H]
+	\centering
+	\caption{Diagrama comparativo das arquiteturas}
+	\label{fig:arquiteturas-comparadas}
+	\vspace{-0.3cm}
+	\includegraphics[width=0.95\textwidth]{figuras/Event-Driven Architecture-2026-09-23-234454.png}
+	\vspace{0.2cm}
+	
+	{\footnotesize \textbf{Fonte: Elaborada pelo autor}}
+\end{figure}
+
+Os experimentos serão organizados em cenários que variam a concentração de grau de saída dos iniciadores, o tamanho das cascatas e a intensidade do pico. Cada cenário será repetido múltiplas vezes para permitir análise estatística.
 
 \iffalse
 

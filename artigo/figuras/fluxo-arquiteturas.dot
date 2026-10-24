@@ -1,0 +1,53 @@
+// Figura 1 do artigo — Fluxo de atendimento das arquiteturas síncrona e orientada a eventos.
+// Gerado com Graphviz: dot -Tpng -Gdpi=200 fluxo-arquiteturas.dot -o fluxo-arquiteturas.png
+
+digraph fluxo_arquiteturas {
+    rankdir=LR;
+    splines=spline;
+    bgcolor=white;
+    nodesep=0.35;
+    ranksep=0.45;
+
+    node [shape=box, style=filled, fillcolor=white, color=black,
+          fontname="Liberation Sans", fontsize=22, margin="0.18,0.10"];
+    edge [color=black, arrowsize=0.8, penwidth=1.4,
+          fontname="Liberation Sans", fontsize=18];
+
+    subgraph cluster_sincrona {
+        label="Arquitetura síncrona";
+        fontname="Liberation Sans Bold";
+        fontsize=24;
+        color="#555555";
+        style="rounded";
+        labelloc=t;
+
+        cliente_s [label="Cliente"];
+        servidor_s [label="Servidor e aplicação\n(PHP-FPM /\nLaravel)"];
+        banco_s [label="Banco de dados\nem tabelas\n(MySQL)"];
+
+        cliente_s -> servidor_s;
+        servidor_s -> banco_s;
+        servidor_s -> cliente_s [label="resposta\napós a\ngravação", style=dashed, constraint=false];
+    }
+
+    subgraph cluster_eventos {
+        label="Arquitetura orientada a eventos";
+        fontname="Liberation Sans Bold";
+        fontsize=24;
+        color="#555555";
+        style="rounded";
+        labelloc=t;
+
+        cliente_e [label="Cliente"];
+        servidor_e [label="Servidor e\naplicação\n(Swoole /\nHyperf)"];
+        fila_e [label="Fila de\nmensagens\n(RabbitMQ)"];
+        workers_e [label="Processador\nde tarefas\n(worker)"];
+        banco_e [label="Banco de dados\nem nós e\nconexões\n(Neo4j)"];
+
+        cliente_e -> servidor_e;
+        servidor_e -> cliente_e [label="resposta\nimediata", style=dashed, constraint=false];
+        servidor_e -> fila_e;
+        fila_e -> workers_e;
+        workers_e -> banco_e;
+    }
+}
