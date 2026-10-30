@@ -112,3 +112,14 @@ Fontes de apoio às decisões de engenharia. Não integram a bibliografia do TCC
 - **Acesso:** 29 out. 2026; conteúdo consultado.
 - **Fundamenta:** o grafo social da Meta utiliza MySQL; modelar relações como grafo não obriga adotar um produto de banco de grafos.
 - **Status:** consulta de engenharia; não citada no TCC.
+
+### Laravel — configuração da API
+
+- **Títulos:** *Routing*; *Error Handling* (documentação 13.x).
+- **Autor institucional e publicação:** Laravel; documentação oficial, consultada via Context7.
+- **Ano:** não confirmado; documentação continuamente atualizada.
+- **DOI:** não identificado.
+- **URLs:** https://github.com/laravel/docs/blob/13.x/routing.md ; https://github.com/laravel/docs/blob/13.x/errors.md .
+- **Data de acesso:** 29 out. 2026.
+- **Fundamenta:** registro de rotas stateless em `bootstrap/app.php`, prefixo `/api` e respostas de exceções em JSON. O comando `install:api` também instala Sanctum; o setup registra as rotas diretamente por não exigir autenticação.
+- **Status:** utilizada em `code/laravel`; não citada no TCC.

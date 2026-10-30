@@ -93,7 +93,7 @@ DOCUMENT_NAME=tcc ./scripts/render-latex.sh
 
 ## Desenvolvimento da aplicação
 
-O diretório `code/` está reservado para a aplicação Hyperf. Os comandos de instalação, execução e teste serão documentados aqui quando a implementação do backend for adicionada.
+A API síncrona Laravel está em [`code/laravel/`](code/laravel/README.md), com instruções de instalação, execução e testes. O setup é exclusivamente backend, sem frontend. A implementação Hyperf permanece pendente.
 
 ## Referências
 
