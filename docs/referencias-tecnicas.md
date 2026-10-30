@@ -133,3 +133,13 @@ Fontes de apoio às decisões de engenharia. Não integram a bibliografia do TCC
 - **Data de acesso:** 29 out. 2026.
 - **Fundamenta:** registro de rotas stateless em `bootstrap/app.php`, prefixo `/api` e respostas de exceções em JSON. O comando `install:api` também instala Sanctum; o setup registra as rotas diretamente por não exigir autenticação.
 - **Status:** utilizada em `code/laravel`; não citada no TCC.
+
+### Docker, Hyperf, RabbitMQ e Neo4j — ambientes limitados
+
+- **Títulos:** *Define services in Docker Compose*; *Installation* e *Overview* (Hyperf); *Memory Alarm Threshold*; *Modify the default configuration* (Neo4j).
+- **Autores institucionais:** Docker, Hyperf, RabbitMQ e Neo4j, respectivamente; documentação oficial.
+- **Ano:** não confirmado; documentação continuamente atualizada. DOI e citações acadêmicas não identificados.
+- **URLs:** https://docs.docker.com/reference/compose-file/services/ ; https://github.com/hyperf/hyperf/blob/master/docs/en/quick-start/install.md ; https://github.com/hyperf/hyperf/blob/master/docs/en/quick-start/overview.md ; https://www.rabbitmq.com/docs/memory ; https://neo4j.com/docs/operations-manual/current/docker/configuration/ .
+- **Data de acesso:** 29 out. 2026. Hyperf consultado também via Context7 e arquivos do esqueleto oficial na branch 3.1: https://github.com/hyperf/hyperf-skeleton/tree/3.1 .
+- **Fundamenta:** limites por serviço, dependências com healthchecks, imagem de runtime Swoole, alarme absoluto de memória do RabbitMQ e conversão de configurações Neo4j em variáveis de ambiente. Os valores locais de CPU/RAM são escolhas iniciais de engenharia, sem validação metodológica.
+- **Status:** utilizada na base `code/compose.yaml` e nos overrides de arquitetura; não citada no artigo. RabbitMQ e Neo4j foram apenas consultados, sem configuração mantida no ambiente. Imagens e digests conferidos no registro oficial Docker Hub.

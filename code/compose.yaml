@@ -1,0 +1,7 @@
+# Configuração comum; combine com um dos overrides de arquitetura.
+services:
+  app:
+    working_dir: /app
+    cpus: ${APP_CPUS:-1}
+    mem_limit: ${APP_MEMORY:-512m}
+    memswap_limit: ${APP_MEMORY:-512m}
