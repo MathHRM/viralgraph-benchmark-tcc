@@ -107,7 +107,12 @@ Não cite uma fonte sem consultar seu conteúdo ou, no mínimo, seu resumo, meta
 
 ## Registro das referências
 
-Toda fonte consultada ou citada deverá ser registrada no arquivo `citations.md`.
+O arquivo `citations.md` é exclusivo das citações e referências do texto acadêmico do TCC. Não é um histórico geral de pesquisas nem um catálogo de documentação técnica.
+
+- Registre em `citations.md` as fontes utilizadas no artigo, mantendo correspondência com as citações e referências do LaTeX.
+- Registre em `docs/referencias-tecnicas.md` as fontes consultadas apenas para idealização, decisões de engenharia, ferramentas, infraestrutura ou implementação. Isso inclui avaliações de ferramentas de estresse e observabilidade que ainda não fundamentam o texto acadêmico.
+- Consultar ou recomendar uma tecnologia não autoriza incluir sua documentação em `citations.md`.
+- Se uma fonte técnica passar a fundamentar o artigo, verifique os critérios acadêmicos deste arquivo antes de registrá-la em `citations.md`.
 
 Cada registro deve conter, quando disponível:
 
@@ -120,7 +125,7 @@ Cada registro deve conter, quando disponível:
 - URL;
 - data de acesso;
 - trecho, conceito ou afirmação que a fonte fundamenta;
-- status indicando se a fonte apenas foi consultada ou se já foi citada no TCC.
+- indicação da seção ou afirmação do TCC em que a fonte foi utilizada.
 
 Evite duplicar referências. Antes de adicionar uma nova entrada, confira se ela já existe em `citations.md`.
 
