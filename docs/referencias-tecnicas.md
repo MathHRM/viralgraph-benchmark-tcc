@@ -38,15 +38,25 @@ Fontes de apoio às decisões de engenharia. Não integram a bibliografia do TCC
 
 ### Grafana k6 — geração de carga e métricas
 
-- **Títulos:** *Constant arrival rate*; *Built-in metrics*.
+- **Títulos:** *Constant arrival rate*; *Built-in metrics*; *Install k6*; repositório oficial *grafana/k6*.
 - **Autor institucional e publicação:** Grafana Labs; documentação oficial do k6.
 - **Ano:** não informado nas páginas consultadas; documentação continuamente atualizada. Acesso em 2026 não equivale a publicação em 2026. Verificar edição datada de 2021 ou posterior antes de usar como referência acadêmica.
 - **DOI:** não identificado.
-- **URLs:** https://grafana.com/docs/k6/latest/using-k6/scenarios/executors/constant-arrival-rate/ ; https://grafana.com/docs/k6/latest/using-k6/metrics/reference/ .
-- **Data de acesso:** 24 out. 2026.
+- **URLs:** https://grafana.com/docs/k6/latest/using-k6/scenarios/executors/constant-arrival-rate/ ; https://grafana.com/docs/k6/latest/using-k6/metrics/reference/ ; https://grafana.com/docs/k6/latest/set-up/install-k6/ ; https://github.com/grafana/k6 .
+- **Data de acesso:** 24 out. 2026; executor, instalação e repositório oficial consultados em 29 out. 2026.
 - **Fundamenta:** execução por taxa de chegada independente das respostas, disponibilidade de usuários virtuais e registro de iterações não iniciadas por `dropped_iterations`.
 - **Citações acadêmicas:** não verificadas; documentação técnica.
-- **Status:** consultada para o projeto da arquitetura; não citada no TCC.
+- **Status:** utilizada na escolha e instalação do k6 OSS local e no exemplo `code/k6/`; não citada no TCC. Repositório oficial identifica licença AGPL-3.0; execução local gratuita, sem serviço Cloud obrigatório.
+
+### Docker Compose e k6 — execução reproduzível
+
+- **Títulos:** *Define services in Docker Compose*; *Running k6*.
+- **Autores institucionais:** Docker; Grafana Labs.
+- **Tipo:** documentação oficial, continuamente atualizada; ano de publicação e DOI não identificados.
+- **URLs:** https://docs.docker.com/reference/compose-file/services/ ; https://grafana.com/docs/k6/latest/get-started/running-k6/ .
+- **Data de acesso:** 29 out. 2026.
+- **Fundamenta:** montagem do script no contêiner, execução local do k6 via Docker, configuração de serviços e resolução do host com `extra_hosts`.
+- **Status:** utilizada em `code/k6/compose.yaml`; não citada no TCC.
 
 ### Locust — geração distribuída de carga
 
