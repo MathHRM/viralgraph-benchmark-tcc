@@ -14,7 +14,7 @@ services:
       DB_DATABASE: ${DOCKER_DB_DATABASE:-tcc}
       DB_USERNAME: ${DOCKER_DB_USERNAME:-tcc}
       DB_PASSWORD: ${DOCKER_DB_PASSWORD:-tcc-local-password}
-      SESSION_DRIVER: array
+      SESSION_DRIVER: file
       CACHE_STORE: file
       QUEUE_CONNECTION: sync
     depends_on:

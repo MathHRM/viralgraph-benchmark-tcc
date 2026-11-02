@@ -3,29 +3,31 @@
 namespace App\Modules\Follows\Services;
 
 use App\Modules\Follows\Models\Follow;
+use App\Modules\Shared\Exceptions\SocialDomainException;
 use App\Modules\Users\Models\User;
 
 class FollowService
 {
-    /** @return array{status: int, body: array<string, mixed>} */
-    public function create(int $followerId, int $followedId): array
+    public function create(int $followerId, int $followedId): Follow
     {
-        $follower = User::find($followerId);
         $followed = User::find($followedId);
 
-        if (! $follower || ! $followed) {
-            return ['status' => 404, 'body' => ['message' => 'Referenced user not found.']];
+        if (! $followed) {
+            throw new SocialDomainException('user_not_found', 'User not found.');
         }
-        if ($follower->is($followed)) {
+        if ($followerId === $followedId) {
             $message = 'A user cannot follow themself.';
-            return ['status' => 422, 'body' => ['message' => $message, 'errors' => ['followed_id' => [$message]]]];
+
+            throw new SocialDomainException('validation_failed', $message, ['followed_id' => [$message]]);
         }
 
         $follow = Follow::firstOrCreate(['follower_id' => $followerId, 'followed_id' => $followedId]);
 
-        return [
-            'status' => $follow->wasRecentlyCreated ? 201 : 200,
-            'body' => ['data' => $follow->only(['id', 'follower_id', 'followed_id', 'created_at'])],
-        ];
+        return $follow;
+    }
+
+    public function delete(int $followerId, int $followedId): void
+    {
+        Follow::where('follower_id', $followerId)->where('followed_id', $followedId)->delete();
     }
 }

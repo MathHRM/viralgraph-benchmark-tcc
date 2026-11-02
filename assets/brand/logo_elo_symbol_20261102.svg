@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" role="img" aria-labelledby="title">
+  <title id="title">Símbolo Elo</title>
+  <path d="M15 38.5c-4.2-4.2-4.2-11 0-15.2l5.2-5.2c4.2-4.2 11-4.2 15.2 0l1.6 1.6" stroke="#3C2045" stroke-width="6" stroke-linecap="round"/>
+  <path d="M49 25.5c4.2 4.2 4.2 11 0 15.2l-5.2 5.2c-4.2 4.2-11 4.2-15.2 0L27 44.3" stroke="#E67E69" stroke-width="6" stroke-linecap="round"/>
+  <path d="m24 37 16-10" stroke="#6D3A6D" stroke-width="5" stroke-linecap="round"/>
+  <circle cx="19" cy="31" r="3" fill="#3C2045"/>
+  <circle cx="45" cy="33" r="3" fill="#E67E69"/>
+</svg>

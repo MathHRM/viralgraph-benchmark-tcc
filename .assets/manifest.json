@@ -1,0 +1,36 @@
+{
+  "assets": [
+    {
+      "id": "logo-elo-horizontal-20261102",
+      "name": "Elo horizontal logo",
+      "type": "logo",
+      "path": "assets/brand/logo_elo_horizontal_20261102.svg",
+      "tags": ["brand", "logo", "horizontal"],
+      "status": "draft",
+      "source": "Original SVG created for the proposed Elo identity",
+      "createdAt": "2026-11-02"
+    },
+    {
+      "id": "logo-elo-symbol-20261102",
+      "name": "Elo symbol",
+      "type": "logo",
+      "path": "assets/brand/logo_elo_symbol_20261102.svg",
+      "tags": ["brand", "logo", "symbol"],
+      "status": "draft",
+      "source": "Original SVG created for the proposed Elo identity",
+      "createdAt": "2026-11-02"
+    },
+    {
+      "id": "design-elo-community-photo-20261102",
+      "name": "Elo community editorial photo",
+      "type": "design",
+      "path": "assets/brand/design_elo_community-photo_20261102.png",
+      "dimensions": { "width": 1536, "height": 1024 },
+      "mimeType": "image/png",
+      "tags": ["brand", "community", "editorial", "photo"],
+      "status": "draft",
+      "source": "Generated with the image generation tool; illustrative scene, not a real user testimonial",
+      "createdAt": "2026-11-02"
+    }
+  ]
+}

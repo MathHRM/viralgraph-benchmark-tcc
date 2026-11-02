@@ -1,0 +1,133 @@
+{
+  "brand": "Elo",
+  "primitive": {
+    "color": {
+      "primary": {
+        "50": {
+          "$value": "#ECE9EC",
+          "$type": "color"
+        },
+        "100": {
+          "$value": "#D8D2DA",
+          "$type": "color"
+        },
+        "200": {
+          "$value": "#B1A6B5",
+          "$type": "color"
+        },
+        "300": {
+          "$value": "#8A798F",
+          "$type": "color"
+        },
+        "400": {
+          "$value": "#634D6A",
+          "$type": "color"
+        },
+        "500": {
+          "$value": "#3C2045",
+          "$type": "color"
+        },
+        "600": {
+          "$value": "#331B3B",
+          "$type": "color"
+        },
+        "700": {
+          "$value": "#2A1630",
+          "$type": "color"
+        },
+        "800": {
+          "$value": "#211226",
+          "$type": "color"
+        },
+        "900": {
+          "$value": "#180D1C",
+          "$type": "color"
+        }
+      },
+      "secondary": {
+        "50": {
+          "$value": "#F0EBF0",
+          "$type": "color"
+        },
+        "100": {
+          "$value": "#E2D8E2",
+          "$type": "color"
+        },
+        "200": {
+          "$value": "#C5B0C5",
+          "$type": "color"
+        },
+        "300": {
+          "$value": "#A789A7",
+          "$type": "color"
+        },
+        "400": {
+          "$value": "#8A618A",
+          "$type": "color"
+        },
+        "500": {
+          "$value": "#6D3A6D",
+          "$type": "color"
+        },
+        "600": {
+          "$value": "#5D315D",
+          "$type": "color"
+        },
+        "700": {
+          "$value": "#4C294C",
+          "$type": "color"
+        },
+        "800": {
+          "$value": "#3C203C",
+          "$type": "color"
+        },
+        "900": {
+          "$value": "#2C172C",
+          "$type": "color"
+        }
+      },
+      "accent": {
+        "50": {
+          "$value": "#FDF2F0",
+          "$type": "color"
+        },
+        "100": {
+          "$value": "#FAE5E1",
+          "$type": "color"
+        },
+        "200": {
+          "$value": "#F5CBC3",
+          "$type": "color"
+        },
+        "300": {
+          "$value": "#F0B2A5",
+          "$type": "color"
+        },
+        "400": {
+          "$value": "#EB9887",
+          "$type": "color"
+        },
+        "500": {
+          "$value": "#E67E69",
+          "$type": "color"
+        },
+        "600": {
+          "$value": "#C46B59",
+          "$type": "color"
+        },
+        "700": {
+          "$value": "#A1584A",
+          "$type": "color"
+        },
+        "800": {
+          "$value": "#7F453A",
+          "$type": "color"
+        },
+        "900": {
+          "$value": "#5C322A",
+          "$type": "color"
+        }
+      }
+    }
+  }
+}

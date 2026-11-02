@@ -16,30 +16,39 @@ php artisan serve
 
 Não sobrescreva um `.env` já configurado. O setup inicial já gera esse arquivo localmente; ele não é versionado.
 
-`GET http://127.0.0.1:8000/api/health` retorna `{"status":"ok"}`. Essa rota verifica a resposta da aplicação, sem consultar o banco. As rotas ficam em `routes/api.php`, com prefixo `/api`, sem sessão e com erros em JSON.
+`GET http://127.0.0.1:8000/api/health` retorna `{"status":"ok"}`. Essa rota verifica a resposta da aplicação, sem consultar o banco. As rotas ficam em `routes/api.php`, com prefixo `/api`; respostas de erro usam JSON.
 
 ## API do domínio social
 
-As rotas de escrita aceitam JSON. Os IDs identificam atores do experimento e não representam autenticação.
+As rotas de escrita aceitam JSON. O backend usa sessão para autenticar; os endpoints protegidos obtêm o ator da sessão, sem aceitar `user_id` ou `follower_id` como identidade do usuário atual.
 
-O código do domínio está organizado como monólito modular em `app/Modules`: Users, Follows, Posts e Shares. Cada módulo contém seu modelo, service de aplicação, controller HTTP e arquivo de rotas; os controllers validam a entrada e formatam a resposta, enquanto os services aplicam regras e persistem os dados; `routes/api.php` agrega as rotas dos módulos. A aplicação e o banco continuam sendo únicos.
+O código está organizado como monólito modular em `app/Modules`. Services aplicam regras e retornam dados ou erros de domínio; controllers e o renderizador global convertem esses resultados em HTTP. Cadastro, sessão, busca, follows, feed, posts, shares e operações seguem o contrato compartilhado descrito em `openspec/changes/define-shared-social-api/specs/shared-social-api/spec.md`.
 
-| Método e rota | Corpo | Resultado |
+| Método e rota | Acesso | Resultado |
 | --- | --- | --- |
-| `POST /api/users` | `{"username":"ana"}` | 201 e usuário criado; 409 para username já utilizado, sem distinção de caixa |
-| `POST /api/follows` | `{"follower_id":1,"followed_id":2}` | 201 para nova relação; 200 para relação existente |
-| `POST /api/posts` | `{"user_id":1,"content":"Publicação"}` | 201; conteúdo de 1 a 500 caracteres |
-| `POST /api/shares` | `{"user_id":2,"post_id":1}` | 201 para novo compartilhamento; 200 para existente |
+| `GET /api/csrf` | Público | Token CSRF para as próximas requisições de escrita |
+| `POST /api/users` | Público | Cadastro com `username` e `password`; 201 com identidade pública |
+| `POST /api/sessions` | Público | Login com `username` e `password` |
+| `GET /api/session`, `DELETE /api/session` | Sessão | Lê a identidade ou encerra a sessão |
+| `GET /api/users?search=ana` | Sessão | Busca usuários públicos com `limit` e `cursor` |
+| `POST /api/follows` | Sessão | Cria follow usando `followed_id` |
+| `DELETE /api/follows/{user_id}` | Sessão | Remove follow |
+| `GET /api/feed` | Sessão | Feed do próprio usuário e de quem segue, com `limit` e `cursor` |
+| `POST /api/posts` | Sessão | Publica `content` de 1 a 500 caracteres |
+| `POST /api/shares` | Sessão | Compartilha publicação alheia usando `post_id` e `origin_share_id` opcional |
+| `GET /api/operations/{operation_id}` | Sessão | Consulta resultado persistido de uma escrita |
 
-No compartilhamento, `origin_share_id` é opcional para compartilhamento direto. Quando informado, deve apontar para um compartilhamento persistido da mesma publicação original. Não é permitido seguir a si próprio nem compartilhar a própria publicação. Campos inválidos retornam 422 e referências inexistentes retornam 404.
+Usuários têm nome entre 3 e 30 caracteres ASCII (letras, números e `_`) e senha de 8 a 128 caracteres. Username é único sem distinção de caixa. Escritas retornam HTTP 201 com operação `completed` depois da persistência. Erros têm envelope `{ "error": { "code", "message", "details?" } }`.
+
+Para clientes de navegador, envie cookies (`credentials: include`) e obtenha o token antes de cada fluxo de escrita. Após login, a sessão é renovada; busque um token atualizado antes da próxima escrita. O frontend já implementa esse fluxo.
 
 Exemplo de chamada:
 
 ```bash
-curl --fail-with-body http://127.0.0.1:8000/api/users \
-  -H 'Content-Type: application/json' \
-  -d '{"username":"ana"}'
+curl -i -c cookies.txt http://127.0.0.1:8000/api/csrf
 ```
+
+O token retornado em `data.token` deve ser enviado no cabeçalho `X-CSRF-TOKEN` junto ao cookie de sessão recebido. A API assíncrona ainda precisa implementar esse mesmo contrato.
 
 ## Banco de dados
 
@@ -51,7 +60,7 @@ php artisan migrate
 
 O setup local não cria servidor ou banco MySQL; o ambiente Docker descrito abaixo cria ambos. As migrations criam usuários, relações de seguimento, publicações e compartilhamentos. Em bancos já utilizados, a migration de username preserva usuários existentes e preenche nomes no formato `user-{id}`; faça backup antes de aplicar migrations em outros ambientes.
 
-Jobs usam execução síncrona (`QUEUE_CONNECTION=sync`) e o cache usa arquivos. Não há autenticação configurada. Laravel Boost está instalado apenas para desenvolvimento, conforme as instruções do esqueleto.
+Jobs usam execução síncrona (`QUEUE_CONNECTION=sync`) e sessão/cache usam arquivos no ambiente Docker de desenvolvimento. Laravel Boost está instalado apenas para desenvolvimento, conforme as instruções do esqueleto.
 
 ## Testes
 
