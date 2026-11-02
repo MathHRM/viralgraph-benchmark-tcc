@@ -1,9 +1,12 @@
 <?php
 
 use App\Modules\Security\Http\Controllers\CsrfController;
+use App\Modules\Shared\Http\Controllers\MetricsController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware('web')->group(function (): void {
+    Route::get('/metrics', MetricsController::class);
+
     Route::get('/health', function () {
         return response()->json(['status' => 'ok']);
     });

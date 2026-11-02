@@ -23,6 +23,7 @@ export default function () {
   const response = http.get(__ENV.URL || 'http://127.0.0.1:8000/api/health', {
     redirects: 0,
     timeout: '10s',
+    headers: { 'X-Tcc-Load-Test': 'true' },
   });
   check(response, { 'status 200': (r) => r.status === 200 });
 }

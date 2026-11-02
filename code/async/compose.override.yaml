@@ -4,3 +4,5 @@ services:
     image: hyperf/hyperf:8.4-alpine-v3.22-swoole-slim-v6.2.2@sha256:cb43095d43871e5719efea95f73fbce5bca8a2197873decd77601c9a83be41c0
     # Ambiente disponível sem instalar ou iniciar uma aplicação.
     entrypoint: ["tail", "-f", "/dev/null"]
+    labels:
+      metrics.architecture: asynchronous

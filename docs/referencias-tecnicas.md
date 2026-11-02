@@ -36,6 +36,26 @@
 
 Fontes de apoio às decisões de engenharia. Não integram a bibliografia do TCC. Caso sejam utilizadas no artigo, deverão ser verificadas segundo os critérios acadêmicos do projeto e registradas em `citations.md`.
 
+### Prometheus — coleta de métricas HTTP
+
+- **Título:** *Getting started*; *Exposition formats*.
+- **Autor institucional:** Prometheus Authors; documentação oficial.
+- **Ano:** documentação continuamente atualizada; ano da página não identificado.
+- **URLs:** https://prometheus.io/docs/prometheus/latest/getting_started/ ; https://prometheus.io/docs/instrumenting/exposition_formats/ .
+- **Data de acesso:** 2 nov. 2026.
+- **Fundamenta:** coleta por scraping de endpoints HTTP e exposição de métricas em formato textual compatível.
+- **Status:** utilizada na configuração comum do Prometheus em `code/observability/` e no exporter Laravel; fonte técnica, não citada no TCC.
+
+### PromPHP — cliente PHP e armazenamento APCu
+
+- **Título:** *PromPHP: Prometheus client library for PHP*.
+- **Autores:** contribuidores do projeto PromPHP.
+- **Tipo:** biblioteca de software livre; repositório e documentação técnica.
+- **URL:** https://github.com/PromPHP/prometheus_client_php .
+- **Data de acesso:** 2 nov. 2026; versão instalada: 2.15.1.
+- **Fundamenta:** contadores, histogramas, renderer de exposição e adaptador APCu usados pelo middleware Laravel. APCu permite agregar métricas entre requisições atendidas por processos FPM no mesmo contêiner.
+- **Status:** dependência de implementação; não citada no TCC.
+
 ### Grafana k6 — geração de carga e métricas
 
 - **Títulos:** *Constant arrival rate*; *Built-in metrics*; *Install k6*; repositório oficial *grafana/k6*.
@@ -57,6 +77,16 @@ Fontes de apoio às decisões de engenharia. Não integram a bibliografia do TCC
 - **Data de acesso:** 29 out. 2026.
 - **Fundamenta:** montagem do script no contêiner, execução local do k6 via Docker, configuração de serviços e resolução do host com `extra_hosts`.
 - **Status:** utilizada em `code/k6/compose.yaml`; não citada no TCC.
+
+### Grafana k6 — saída JSON com timestamps
+
+- **Título:** *JSON output* (Results output).
+- **Autor institucional:** Grafana Labs; documentação oficial do k6, continuamente atualizada.
+- **Ano:** não informado; DOI não identificado.
+- **URL:** https://grafana.com/docs/k6/latest/results-output/real-time/json/ .
+- **Data de acesso:** 2 nov. 2026.
+- **Fundamenta:** saída JSON em linhas com pontos individuais, timestamp, valor e tags, usada para localizar e auditar a primeira falha do gerador.
+- **Status:** utilizada no relatório do dashboard em `code/dashboard/`; não citada no TCC.
 
 ### Locust — geração distribuída de carga
 

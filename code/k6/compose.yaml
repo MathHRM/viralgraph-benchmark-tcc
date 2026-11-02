@@ -10,5 +10,6 @@ services:
       MAX_VUS: ${MAX_VUS:-500}
     volumes:
       - .:/scripts:ro
+      - ../dashboard/reports:/results
     extra_hosts:
       - "host.docker.internal:host-gateway"

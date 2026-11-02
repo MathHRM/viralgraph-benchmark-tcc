@@ -84,17 +84,28 @@ Escolhas técnicas que afetem comportamento, consistência, durabilidade, infrae
 
 Pesquisar fontes antes de fundamentar recomendações técnicas e registrar as fontes de engenharia em [referencias-tecnicas.md](referencias-tecnicas.md). Reservar `citations.md` às citações do TCC. Não escolher ferramentas apenas porque aparecem nos desenhos ou porque são populares.
 
-## Observabilidade comum: requisitos e questões em aberto
+## Observabilidade comum: base implementada e pendências
 
-**Confirmado:** observar infraestrutura e código nas duas arquiteturas usando uma base compartilhada. No momento, documentar essa base para o Hyperf e sua futura integração com Laravel, sem implementar o Laravel.
+**Confirmado nesta etapa:** Prometheus como coletor e armazenamento comum, e formato de exposição Prometheus para métricas das duas aplicações. O Laravel síncrono já registra requisições HTTP em armazenamento APCu compartilhado entre os processos PHP-FPM e expõe `GET /api/metrics`. O Prometheus consulta esse endpoint a cada 5 segundos, mantém até 7 dias de dados e identifica o alvo com `job=sync`. O serviço Prometheus tem limites de 0,25 CPU e 256 MiB (ajustáveis por `PROMETHEUS_CPUS` e `PROMETHEUS_MEMORY`). O dashboard consulta a API do Prometheus a cada 5 segundos. O proxy local do Vite encaminha essas consultas; execute-o junto ao Compose.
+
+O contrato HTTP comum inclui:
+
+| Métrica | Tipo | Definição |
+| --- | --- | --- |
+| `tcc_http_requests_total` | contador | Requisições concluídas, por método, URI da rota e status HTTP. |
+| `tcc_http_request_duration_seconds` | histograma | Tempo interno da aplicação, da entrada no middleware até a resposta estar pronta, com os mesmos rótulos e buckets em segundos; não inclui transmissão pela rede. |
+
+O painel deriva vazão (requisições/s), proporção de respostas HTTP 4xx/5xx, tempo médio e p95. O k6 continua sendo a fonte para latência percebida pelo cliente, incluindo a rede. CPU e memória não estão instrumentadas e não devem ser inferidas desses indicadores. Série ausente significa falta de dados, não valor zero. A arquitetura assíncrona não está implementada neste checkout; quando existir, deverá expor os mesmos nomes, unidades e rótulos, e ser registrada no Prometheus como `job=async`. O painel já deixa explícita a ausência de dados para esse alvo.
+
+O uso de Prometheus e da exposição compatível entre backends corresponde à escolha desta etapa, não a uma alegação de que toda a observabilidade requerida está concluída. Rastreamento distribuído, métricas de CPU/memória, filas, workers, resultados de negócio, identificação de ensaios e avaliação do custo da coleta permanecem pendentes. O endpoint de métricas não é autenticado e deve ficar restrito ao ambiente local/experimental.
 
 | Área                  | O que o projeto precisa permitir avaliar           | Definição pendente                        |
 | --------------------- | -------------------------------------------------- | ----------------------------------------- |
-| Infraestrutura        | Consumo e saturação de CPU, memória, disco e rede  | Ferramentas, coleta e limites             |
+| Infraestrutura        | Consumo e saturação de CPU, memória, disco e rede  | Coleta e limites ainda pendentes          |
 | Serviços              | Estado do runtime, bancos, broker e workers        | Integrações e métricas de cada componente |
-| Código                | Caminho das operações, tempos por etapa e falhas   | Instrumentação e propagação de contexto   |
+| Código                | Caminho das operações, tempos por etapa e falhas   | Rastreamento e propagação de contexto     |
 | Resultado do trabalho | Operações aceitas, concluídas, falhas e pendências | Critérios comuns de conclusão e correção  |
-| Experimentos          | Associação de cada medição ao sistema e ao ensaio  | Identificação, retenção e exportação      |
+| Experimentos          | Associação de cada medição ao sistema e ao ensaio  | Identificação e exportação                |
 
 Questões a resolver ao projetar a base:
 
@@ -106,7 +117,7 @@ Questões a resolver ao projetar a base:
 - Como impedir que dados de um ensaio sejam confundidos com os de outro?
 - Quais dados não devem aparecer nos registros, e como controlar volume e retenção?
 
-Prometheus, Grafana e OpenTelemetry/APM já aparecem como possibilidades no escopo do TCC; a seleção final e os componentes adicionais continuam pendentes. Não há stack instalada nem instrumentação validada.
+Prometheus foi selecionado para a coleta e consulta nesta etapa. O endpoint Laravel e o alvo `sync` foram verificados em execução Docker. Grafana e OpenTelemetry/APM continuam como possibilidades, não instaladas; a instrumentação Hyperf deverá seguir o contrato definido acima quando esse backend estiver disponível.
 
 ## Ferramenta comum de carga e estresse
 

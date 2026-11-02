@@ -78,9 +78,13 @@ Na raiz do repositório:
 docker compose -f code/compose.yaml -f code/laravel/compose.override.yaml up -d --build --wait
 docker compose -f code/compose.yaml -f code/laravel/compose.override.yaml exec app php artisan migrate --force
 curl --fail http://127.0.0.1:8000/api/health
+curl --fail http://127.0.0.1:8000/api/metrics
+curl --fail 'http://127.0.0.1:9090/api/v1/query?query=up%7Bjob%3D%22sync%22%7D'
 docker compose -f code/compose.yaml -f code/laravel/compose.override.yaml exec app php artisan test --compact
 ```
 
 Não é necessário instalar PHP ou Composer no host nem copiar o `.env`. O build instala as dependências do lock, incluindo as de desenvolvimento para executar os testes. As configurações de conexão vêm do Compose. O código fica na imagem; alterações exigem reconstrução. Dados do MySQL persistem no volume `mysql-data`; `down` preserva esse volume e `down --volumes` apaga seus dados.
+
+O serviço Prometheus consulta as métricas HTTP a cada 5 segundos e mantém 7 dias no volume `prometheus-data`. O dashboard consulta sua API no proxy local do Vite. Para abri-lo, execute `cd code/dashboard && npm install && npm run dev` e acesse o endereço mostrado pelo Vite. O endpoint `/api/metrics` não tem autenticação e deve permanecer restrito ao ambiente local de experimento. Ele contabiliza requisições da aplicação, exceto a própria coleta e as verificações normais de saúde. O k6 marca suas chamadas de carga com `X-Tcc-Load-Test`, permitindo medir `/api/health` sem incluir as verificações automáticas. Fora da imagem Docker, sem a extensão APCu, retorna HTTP 503 e não registra métricas.
 
 Veja os limites por serviço, variáveis, credenciais locais e procedimentos de repetição no [README principal](../../README.md#ambientes-docker-limitados).

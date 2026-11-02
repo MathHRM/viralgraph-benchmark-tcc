@@ -17,6 +17,8 @@ services:
       SESSION_DRIVER: file
       CACHE_STORE: file
       QUEUE_CONNECTION: sync
+    labels:
+      metrics.architecture: synchronous
     depends_on:
       mysql:
         condition: service_healthy
@@ -25,6 +27,8 @@ services:
     cpus: ${WEB_CPUS:-0.25}
     mem_limit: ${WEB_MEMORY:-128m}
     memswap_limit: ${WEB_MEMORY:-128m}
+    labels:
+      metrics.architecture: synchronous
     ports:
       - "127.0.0.1:${HTTP_PORT:-8000}:80"
     volumes:
@@ -43,6 +47,8 @@ services:
     cpus: ${MYSQL_CPUS:-2}
     mem_limit: ${MYSQL_MEMORY:-2048m}
     memswap_limit: ${MYSQL_MEMORY:-2048m}
+    labels:
+      metrics.architecture: synchronous
     command: ["--innodb-buffer-pool-size=512M", "--max-connections=100"]
     environment:
       MYSQL_DATABASE: ${DOCKER_DB_DATABASE:-tcc}

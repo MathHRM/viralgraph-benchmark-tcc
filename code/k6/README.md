@@ -59,7 +59,9 @@ k6 run code/k6/carga.js
 ```
 
 O padrão é 500 iterações/s por 30 segundos, com um GET por iteração,
-sem seguir redirecionamentos. Para alterar o destino e a carga:
+sem seguir redirecionamentos. O script envia `X-Tcc-Load-Test` para que o
+middleware registre essas chamadas a `/api/health` e continue ignorando as
+verificações normais de saúde. Para alterar o destino e a carga:
 
 ```bash
 k6 run -e URL=http://127.0.0.1:8000/api/health -e RPS=1000 -e DURATION=1m code/k6/carga.js
@@ -89,6 +91,26 @@ Os endereços abaixo são exemplos (assumidos); ajuste às portas e rotas reais:
 k6 run -e URL=http://127.0.0.1:8000/api/health -e RPS=500 -e DURATION=30s code/k6/carga.js
 k6 run -e URL=http://127.0.0.1:9501/api/health -e RPS=500 -e DURATION=30s code/k6/carga.js
 ```
+
+## Relatórios pelo dashboard
+
+Ao iniciar um ensaio pelo dashboard, o controle local salva um relatório JSON
+por arquitetura em `code/dashboard/reports/<execução>-<arquitetura>/`. O
+relatório registra perfil solicitado, início e fim, amostras Prometheus de
+cinco em cinco segundos, primeira falha observada e eventos de falha do k6.
+Os arquivos `k6-events.json` e `output.log` preservam os dados brutos para
+auditoria; o relatório inclui o SHA-256 de cada arquivo. A lista e os links
+para os JSON ficam na aba **Execuções**.
+
+O instante da primeira falha é o timestamp do primeiro evento k6 que registra
+resposta HTTP com erro ou reprovação do check de status 200. Portanto, sua
+precisão é a do evento do gerador; CPU, memória e métricas Prometheus têm
+resolução de coleta de cinco segundos. Relatórios continuam no host após
+reiniciar o dashboard e não são apagados automaticamente.
+
+Neste checkout, somente Laravel é medido de verdade. Execuções do Hyperf ainda
+geram um relatório marcado como `not_measured`, sem métricas nem horário de
+falha, até a implementação do serviço assíncrono e sua integração ao gerador.
 
 ### Proposta operacional para os experimentos
 
