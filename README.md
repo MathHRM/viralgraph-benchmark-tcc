@@ -93,7 +93,79 @@ DOCUMENT_NAME=tcc ./scripts/render-latex.sh
 
 ## Desenvolvimento da aplicação
 
-O diretório `code/` está reservado para a aplicação Hyperf. Os comandos de instalação, execução e teste serão documentados aqui quando a implementação do backend for adicionada.
+A API síncrona Laravel está em [`code/laravel/`](code/laravel/README.md), com instruções de instalação, execução e testes. O setup é exclusivamente backend, sem frontend. A base Docker da arquitetura assíncrona está em `code/async/`, sem aplicação ou dependências PHP instaladas.
+
+## Ambientes Docker limitados
+
+Com Make instalado, execute na raiz do repositório:
+
+```bash
+make laravel                          # Sobe o Laravel e seus serviços
+make async                            # Sobe somente o ambiente PHP/Swoole
+make laravel CMD="down"                # Para o Laravel, preservando os dados
+make async CMD="down"                  # Para o ambiente async
+make async CMD="exec app sh"           # Abre um shell no ambiente async
+make laravel CMD="exec app php artisan migrate --force"
+```
+
+Os alvos combinam a base e o override correspondente. `CMD` permite passar outros comandos ao Compose; por padrão, executam `up -d --build --wait`. Variáveis como `APP_CPUS` e `APP_MEMORY` também podem ser informadas antes de `make`. Os comandos Docker equivalentes estão abaixo.
+
+`code/compose.yaml` define os limites comuns do serviço `app`. Cada arquitetura tem um override: `code/laravel/compose.override.yaml` e `code/async/compose.override.yaml`. Use sempre o arquivo base primeiro, para que os caminhos de build e montagem sejam resolvidos a partir de `code/`.
+
+Na raiz do repositório, com Docker Engine e Compose v2:
+
+```bash
+# Laravel + PHP-FPM + Nginx + MySQL
+docker compose -f code/compose.yaml -f code/laravel/compose.override.yaml up -d --build --wait
+docker compose -f code/compose.yaml -f code/laravel/compose.override.yaml exec app php artisan migrate --force
+curl --fail http://127.0.0.1:8000/api/health
+
+# Somente o ambiente PHP/Swoole, sem aplicação ou serviços adicionais
+docker compose -f code/compose.yaml -f code/async/compose.override.yaml up -d --wait
+docker compose -f code/compose.yaml -f code/async/compose.override.yaml exec app sh
+```
+
+O override async seleciona apenas a imagem de runtime e mantém um processo ocioso. Não instala projeto Hyperf, não inicia servidor HTTP e não publica portas. Não configura RabbitMQ, Neo4j ou integrações. O Composer já vem na imagem, mas não é executado pelo Compose.
+
+Limites iniciais **(assumidos, sem calibração experimental)**:
+
+| Serviço | CPUs | RAM |
+| --- | --- | --- |
+| `app`, comum às duas arquiteturas | 1 | 512 MiB |
+| Nginx, somente Laravel | 0,25 | 128 MiB |
+| MySQL, somente Laravel | 2 | 2048 MiB |
+
+Os limites são por contêiner, sem swap adicional; não limitam disco, construção das imagens ou o conjunto da arquitetura. Portanto, os tetos totais das duas composições são diferentes e não estabelecem condições equivalentes para comparação experimental. Sobrescreva `APP_CPUS` e `APP_MEMORY` no ambiente quando necessário:
+
+```bash
+APP_CPUS=0.5 APP_MEMORY=768m docker compose -f code/compose.yaml -f code/async/compose.override.yaml up -d --wait
+```
+
+No Laravel, `WEB_CPUS`, `WEB_MEMORY`, `MYSQL_CPUS`, `MYSQL_MEMORY` e `HTTP_PORT` ajustam os demais limites e a porta HTTP. PHP-FPM usa quatro processos fixos, com limite PHP de 128 MiB por processo; a memória total do contêiner inclui também outros custos e deve ser calibrada para a carga.
+
+As imagens estão fixadas por digest e as dependências Laravel por `composer.lock`. O build Laravel usa pacotes Alpine que podem mudar, portanto não garante reconstrução byte a byte. Para repetir um ensaio, preserve também as imagens construídas, o commit, as variáveis e o estado inicial dos dados.
+
+O Laravel copia o código para a imagem; alterações exigem `up -d --build --wait` com os dois arquivos. O `.env` local não é copiado nem sobrescrito. As credenciais padrão são públicas e destinadas ao desenvolvimento local; podem ser alteradas por `DOCKER_APP_KEY`, `DOCKER_DB_DATABASE`, `DOCKER_DB_USERNAME`, `DOCKER_DB_PASSWORD` e `DOCKER_DB_ROOT_PASSWORD`. Somente o HTTP Laravel é publicado, em `127.0.0.1`.
+
+O MySQL mantém dados no volume `mysql-data`. Alterar as variáveis não troca credenciais de um banco já inicializado. Para parar preservando os dados:
+
+```bash
+docker compose -f code/compose.yaml -f code/laravel/compose.override.yaml down
+docker compose -f code/compose.yaml -f code/async/compose.override.yaml down
+```
+
+Adicionar `--volumes` ao `down` do Laravel apaga definitivamente os dados do MySQL; as migrations deverão ser executadas novamente. O ambiente async não cria volumes nem monta código da aplicação.
+
+Validação e inspeção:
+
+```bash
+docker compose -f code/compose.yaml -f code/laravel/compose.override.yaml config --quiet
+docker compose -f code/compose.yaml -f code/async/compose.override.yaml config --quiet
+docker compose -f code/compose.yaml -f code/laravel/compose.override.yaml exec app php artisan test --compact
+docker compose -f code/compose.yaml -f code/async/compose.override.yaml exec app sh -c 'cat /sys/fs/cgroup/cpu.max /sys/fs/cgroup/memory.max /sys/fs/cgroup/memory.swap.max'
+```
+
+Em Linux com cgroups v2, o último comando deve mostrar `100000 100000`, `536870912` e `0` nos valores padrão. O Compose base depende de um override para fornecer a imagem ou o build. A aplicação async, a observabilidade e os testes de carga ainda não estão implementados.
 
 ## Referências
 
