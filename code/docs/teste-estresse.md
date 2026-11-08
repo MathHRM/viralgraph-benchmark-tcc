@@ -61,13 +61,21 @@ Preparar bancos limpos antes de cada repetição. Seed e dados de aquecimento n�
 
 Usar dados sintéticos. O mesmo manifesto deve gerar IDs válidos em cada implementação mediante mapeamento, ou aceitar IDs determinísticos numa preparação fora da API pública. Não reutilizar UUIDs retornados por uma arquitetura como se existissem na outra.
 
+## Critério de validade do post no teste
+
+A resposta 201 com `Location` e a consulta individual pertencem ao contrato da API. A pausa de 1–30 ms antes da consulta é uma regra deste protocolo de teste, não um prazo de resposta do endpoint.
+
+Após cada criação com 201, o gerador aguarda de 1 a 30 ms e faz uma única consulta ao `Location` pelo balanceador. Para considerar o post válido no teste, exige 200 com ID, autor e conteúdo iguais aos enviados. Não usar polling ou retries para ocultar indisponibilidade nessa consulta. Uma criação aceita com 201, mas sem leitura válida nessa verificação, não satisfaz o critério do teste; isso, isoladamente, não prova que o post não foi persistido.
+
+Esse critério avalia a visibilidade após a criação, inclusive entre instâncias. No cenário de correção, forçar a leitura pela outra instância; round-robin sozinho não prova que cada leitura cruzou instâncias. A regra permanece igual para as duas arquiteturas.
+
 ## Cenários
 
 ### A. Correção e concorrência, antes do estresse
 
 Validar o contrato com carga pequena antes de aumentar taxas:
 
-- Criar usuário e verificar a existência de seu feed único; após 201 de post, consultar `Location` com pausa de 1–30 ms e verificar leitura pela outra instância, conforme o contrato.
+- Criar usuário e verificar a existência de seu feed único; após 201 de post, consultar `Location` com pausa de 1–30 ms e verificar leitura pela outra instância, conforme o critério de validade do post definido neste protocolo.
 - Validar strings, tipos, idade, datas, referências inexistentes e buscas; apelidos `Ana`, `ana` e `aná` devem poder coexistir.
 - Disparar simultaneamente duplicatas de seguir e compartilhar pelas duas instâncias: apenas uma criação persistida por chave lógica.
 - Validar a regra para seguir a si próprio; autor não recebe nem compartilha o próprio post. No corte final, desconsiderar compartilhamento sem entrada válida no feed.
