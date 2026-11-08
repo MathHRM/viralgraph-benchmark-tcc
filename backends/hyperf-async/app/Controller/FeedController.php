@@ -6,8 +6,7 @@ use App\Pagination\Page;
 use App\Repository\FeedRepository;
 use App\Repository\UserRepository;
 use App\Validation\Input;
-use App\Validation\RequestInput;
-use Hyperf\HttpServer\Contract\RequestInterface;
+use App\Request\FeedRequest;
 use Hyperf\HttpServer\Contract\ResponseInterface;
 use Swow\Psr7\Message\ResponsePlusInterface;
 
@@ -15,10 +14,10 @@ final class FeedController extends AbstractController
 {
     public function __construct(private UserRepository $users, private FeedRepository $feeds) {}
 
-    public function index(string $id, RequestInterface $request, ResponseInterface $response): ResponsePlusInterface
+    public function index(string $id, FeedRequest $request, ResponseInterface $response): ResponsePlusInterface
     {
-        $query = RequestInput::query($request, ['cursor']);
-        $id = Input::uuid($id);
+        $query = $request->validated();
+        $id = $query['id'];
         $scope = 'feed:'.$id;
         $cursor = Input::cursor($query['cursor'] ?? null, $scope);
         $this->users->get($id);

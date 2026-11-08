@@ -107,7 +107,7 @@ class ContractTest(unittest.TestCase):
         valid = {"nome": "Ana", "apelido": str(uuid.uuid4()), "nascimento": "2000-01-01"}
         for patch in ({"nome": 12}, {"nome": None}, {"nome": " "}, {"nome": "a" * 33},
                       {"apelido": "a" * 101}, {"nascimento": "2008-11-09"},
-                      {"nascimento": "2000-02-30"}, {"extra": "x"}, {"nascimento": "2100-01-01"}):
+                      {"nascimento": "2000-02-30"}, {"nascimento": "2100-01-01"}):
             self.assertEqual(request("POST", "/usuarios", valid | patch)[0], 422, patch)
         self.assertEqual(request("POST", "/usuarios", raw="{")[0], 400)
         self.assertEqual(request("POST", "/usuarios", valid, media="text/plain")[0], 415)
@@ -116,8 +116,7 @@ class ContractTest(unittest.TestCase):
         self.assertEqual(request("POST", "/usuarios", valid | {"nascimento": "2008-11-08"})[0], 201)
         for path in ("/usuarios?x=a", "/posts", "/usuarios?s=%20", "/posts?c=%20",
                      "/usuarios?s=" + "a" * 101, "/posts?c=" + "a" * 501,
-                     "/posts/not-uuid", "/feed/not-uuid", "/usuarios?s=Ana&cursor=invalid",
-                     "/metricas?extra=1"):
+                     "/posts/not-uuid", "/feed/not-uuid", "/usuarios?s=Ana&cursor=invalid"):
             status, body, _ = request("GET", path)
             self.assertEqual(status, 422, path)
             self.assertIn("erro", body)
@@ -128,6 +127,43 @@ class ContractTest(unittest.TestCase):
         for content in (" ", "x" * 501, 123, None):
             self.assertEqual(request("POST", "/posts", {"usuario_id": uid, "conteudo": content})[0], 422)
         self.assertEqual(request("POST", "/posts", {"usuario_id": str(uuid.uuid4()), "conteudo": "x"})[0], 404)
+
+    def test_form_requests_validation(self):
+        error = {"erro": {"codigo": "validacao", "mensagem": "Dados inválidos."}}
+        valid = {"nome": "Ana", "apelido": str(uuid.uuid4()), "nascimento": "2000-01-01"}
+        for field in valid:
+            payload = {key: value for key, value in valid.items() if key != field}
+            self.assertEqual(request("POST", "/usuarios", payload)[:2], (422, error))
+        for value in (False, [], {}, "\u2003", "😀" * 33):
+            self.assertEqual(request("POST", "/usuarios", valid | {"nome": value})[:2], (422, error))
+        self.user(name="😀" * 32)
+        self.user(name=" A\u0301" + "a" * 31 + " ")
+        author = self.user()
+        for path, valid_payload, field in [
+            ("/posts", {"usuario_id": author, "conteudo": "texto"}, "usuario_id"),
+            ("/seguir-usuario", {"seguidor_id": author, "seguido_id": author}, "seguidor_id"),
+            ("/compartilhar-post", {"usuario_id": author, "post_id": author}, "post_id"),
+        ]:
+            for value in (None, 123, [], {}, "bad", author + "\n"):
+                self.assertEqual(request("POST", path, valid_payload | {field: value})[:2], (422, error))
+        self.assertEqual(request("GET", "/usuarios/" + author.upper())[1]["id"], author)
+        for path in ("/usuarios?s[]=Ana", "/posts?c[]=texto", "/usuarios?s=Ana&cursor[]=x"):
+            self.assertEqual(request("GET", path)[:2], (422, error))
+        extra_user = valid | {"apelido": str(uuid.uuid4()), "extra": {"qualquer": True}}
+        status, body, _ = request("POST", "/usuarios?extra=1", extra_user)
+        self.assertEqual(status, 201, body)
+        self.assertNotIn("extra", request("GET", "/usuarios/" + body["id"] + "?cursor=x")[1])
+        self.assertEqual(request("GET", "/feed/" + author + "?id=ignorado")[0], 200)
+        self.assertEqual(request("GET", "/usuarios?s=Ana&extra[]=x")[0], 200)
+        self.assertEqual(request("GET", "/metricas?extra=1")[0], 200)
+        # Cada FormRequest é reutilizado pelo container; os dados devem ser isolados por requisição.
+        def send(index):
+            if index % 2:
+                return request("GET", "/usuarios?s[]=Ana", instance="api1")[:2] == (422, error)
+            result = request("GET", "/usuarios?s=" + author, instance="api1")
+            return result[0] == 200 and result[1]["data"] == []
+        with concurrent.futures.ThreadPoolExecutor(max_workers=6) as pool:
+            self.assertTrue(all(pool.map(send, range(12))))
 
     def test_unicode_and_concurrent_uniqueness(self):
         nickname = "á" + str(uuid.uuid4())

@@ -11,10 +11,10 @@ function invalid(callable $call): void {
 }
 check(App\Validation\Input::birth('2008-02-29', '2026-03-01') === '2008-02-29');
 invalid(fn () => App\Validation\Input::birth('2008-02-29', '2026-02-28'));
-check(App\Validation\Input::text(str_repeat('😀', 32), 32) === str_repeat('😀', 32));
-invalid(fn () => App\Validation\Input::text(str_repeat('😀', 33), 32));
-check(App\Validation\Input::text(" A\u{0301}na ", 32, true) === 'Ána');
+check(App\Validation\Input::normalize(" A\u{0301}na ", true) === 'Ána');
+check(App\Validation\Input::normalize('  conteúdo  ') === '  conteúdo  ');
+invalid(fn () => App\Validation\Input::normalize("\xFF"));
 foreach (['{}', '{"a":1,"b":2,"c":3}', '["x",-1,"bad"]'] as $value) {
     invalid(fn () => App\Validation\Input::cursor(base64_encode($value), 'x'));
 }
-echo "Calendário, pontos de código, NFC e cursores: OK\n";
+echo "Calendário, UTF-8, NFC e cursores: OK\n";

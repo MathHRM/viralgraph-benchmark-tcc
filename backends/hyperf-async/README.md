@@ -23,7 +23,8 @@ As credenciais padrão `benchmark` / `benchmark-local` (Neo4j: usuário `neo4j`)
 
 O namespace `App\` aponta para `app/`, seguindo o diretório do skeleton Hyperf. O bootstrap HTTP fica em `bin/hyperf.php`; `bin/init.php` e `bin/worker.php` também usam o container. As camadas abaixo são uma decisão deste projeto:
 
-- `Controller/`: ações HTTP explícitas, validação da requisição, status e cabeçalhos. As rotas estão em `config/routes.php`.
+- `Controller/`: ações HTTP explícitas, status e cabeçalhos. As rotas estão em `config/routes.php`.
+- `Request/`: `FormRequest` do `hyperf/validation`, com regras declarativas e dados acessados por `validated()`. O middleware valida antes dos controllers. `ApiRequest` preserva parsing estrito, campos permitidos e normalização NFC antes das regras; IDs são convertidos para minúsculas.
 - `Service/`: maioridade, auto-relação, permissão para compartilhar e publicação de posts.
 - `Repository/`: consultas específicas de usuários, relações, posts, compartilhamentos, feeds, tarefas e métricas. Cada chamada ao cliente Neo4j continua sendo uma transação.
 - `Infrastructure/`: transporte Neo4j, inicialização do schema e conexão RabbitMQ. `BrokerFactory` abre uma conexão por publicação HTTP; conexões e canais mutáveis não são compartilhados entre corrotinas. O worker mantém sua própria conexão até a reconexão.

@@ -55,6 +55,20 @@ O processo terminou com código 99 e relatório `invalid`: 13 criações de post
 
 Artefatos locais, ignorados pelo Git: `tests/results/k6-smoke-final-20261108/`, incluindo configuração no manifesto, requisições, saída e `report.json`. O manifesto automático não incorpora a conferência externa de limites feita com `bin/check-budget.py`; tampouco mede recursos do gerador. O projeto de smoke foi encerrado preservando seus volumes, e o projeto padrão foi restaurado.
 
+## Validação com FormRequest
+
+Adicionado `hyperf/validation` 3.2.5, com 13 dependências novas no lock e sem atualizar versões das dependências existentes. Os controllers utilizam FormRequests e dados validados; permanecem verificações específicas de JSON, campos extras, normalização NFC, maioridade e cursores. O handler preserva o corpo de erro 422 do contrato.
+
+Os dez testes de integração passaram em 117,027 s, incluindo recuperação do broker, processamento assíncrono e o novo teste de validação. Após simplificar as verificações manuais de campos obrigatórios e tipo do cursor, a imagem foi reconstruída e os testes de validação e FormRequests passaram novamente. O último inclui doze consultas concorrentes à mesma API e classe de request, alternando entradas válidas e inválidas para conferir o isolamento por corrotina. Uma tentativa durante a recriação dos containers falhou ao interpretar uma resposta sem JSON; a repetição após todos os serviços estarem saudáveis passou em 4,818 s.
+
+Os três testes PHP passaram na imagem final. Build, sintaxe PHP, `composer validate --strict`, requisitos de plataforma, auditoria de dependências, orçamento do Compose e `git diff --check` passaram durante a migração. Não foi executada carga de desempenho nesta alteração; os resultados anteriores de stress não validam o desempenho com o novo componente. Artigo e template não foram alterados.
+
 ## Limites
 
 A auditoria precisa integrar preservação exata do corte final e reconstrução de validade. `/metricas` fornece contagens observacionais persistidas, sem substituir essa auditoria. Não foram medidos consumo efetivo, capacidade máxima, desempenho comparativo ou resiliência experimental. Artigo e template LaTeX não foram alterados.
+
+## Campos extras ignorados
+
+Por decisão dos autores, campos desconhecidos no JSON ou na query passam a ser ignorados. O contrato Markdown e o OpenAPI foram atualizados. Removida a rejeição manual e o wrapper `RequestInput`, sem outros usos; os controllers seguem consumindo `validated()`, e o ID da rota prevalece sobre um eventual `id` da query.
+
+Após rebuild e recriação das APIs e worker, os dois testes de validação passaram em 6,931 s. Incluem criação com campo extra de objeto, query extra no POST, descarte do campo na leitura, query extra em busca, recurso, feed e métricas, além das regras obrigatórias e isolamento concorrente. `tests/input.php`, sintaxe dos três arquivos PHP afetados, sintaxe Python, leitura do OpenAPI YAML e `git diff --check` passaram. A suíte completa e carga de desempenho não foram repetidas nesta alteração.

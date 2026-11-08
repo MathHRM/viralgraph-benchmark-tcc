@@ -22,7 +22,7 @@ Cada composição terá duas instâncias HTTP atrás de Nginx em Docker Compose.
 - IDs são UUIDs representados como strings. IDs produzidos pelo sistema não dependem do banco utilizado.
 - Datas de nascimento em `AAAA-MM-DD`; instantes em UTC, formato RFC 3339.
 - Data de referência para idade registrada no manifesto da execução, igual nas duas arquiteturas. Idade calculada por calendário, não por divisão de dias por 365; para nascidos em 29/02, considerar 01/03 nos anos não bissextos.
-- Campos obrigatórios rejeitam ausência, `null`, tipos incorretos e strings vazias ou compostas apenas por espaços. Campos desconhecidos retornam 422. Não converter números em strings.
+- Campos obrigatórios rejeitam ausência, `null`, tipos incorretos e strings vazias ou compostas apenas por espaços. Campos desconhecidos são ignorados e não integram os dados validados. Não converter números em strings.
 - Limites de strings medidos em pontos de código Unicode. Sem corte silencioso. Conteúdo de posts preservado; remover espaços externos de nome/apelido antes de validar e persistir; normalizar texto em Unicode NFC, preservando maiúsculas e acentos.
 - Sem edição, exclusão, deixar de seguir ou desfazer compartilhamento nesta versão.
 - Identificação do ator por `usuario_id`/`seguidor_id` no corpo. Não haverá autenticação no benchmark.

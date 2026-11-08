@@ -297,3 +297,36 @@
 - **Data de acesso:** 8 nov. 2026.
 - **Fundamenta:** nome padrão do nó derivado do hostname e diretório de dados derivado desse nome; hostname fixo no Compose para preservar acesso às filas ao recriar o container.
 - **Status:** consultada para recuperação operacional; não citada no artigo. Ano não verificado; avaliar critério temporal antes de uso acadêmico.
+
+### Hyperf — Validation
+
+- **Título:** *Validation* e código do componente `hyperf/validation` v3.2.5.
+- **Autores institucionais:** Hyperf e seus colaboradores.
+- **Ano e tipo:** documentação e código oficiais contínuos; ano de publicação não identificado.
+- **DOI/identificador:** versão v3.2.5 do componente; DOI não identificado.
+- **URLs:** https://github.com/hyperf/hyperf/blob/master/docs/en/validation.md e https://github.com/hyperf/hyperf/tree/v3.2.5/src/validation .
+- **Data de acesso:** 8 nov. 2026.
+- **Fundamenta:** uso de `FormRequest`, `rules()`, `validated()`, `ValidationMiddleware` e tratamento de `ValidationException`. Documentação consultada via Context7 e comportamento conferido no código da dependência instalada. Componente oficial adotado para substituir regras comuns manuais de entrada, preservando o contrato estrito da API; sem alteração de arquitetura ou infraestrutura.
+- **Status:** consultada para implementação técnica; não citada no artigo. Ano não verificado; avaliar critério temporal antes de uso acadêmico.
+
+### Hyperf — Helpers e Stringable
+
+- **Título:** *3.1 Upgrade Guide — Utils package changes* e código de `Hyperf\Stringable\Str`.
+- **Autores institucionais:** Hyperf e seus colaboradores.
+- **Ano e tipo:** documentação e código oficiais contínuos; ano de publicação não identificado.
+- **DOI:** não identificado.
+- **URLs:** https://github.com/hyperf/hyperf/blob/master/docs/en/upgrade/3.1.md e https://github.com/hyperf/hyperf/blob/3.2/src/stringable/src/Str.php .
+- **Data de acesso:** 8 nov. 2026.
+- **Fundamenta:** existência de helpers oficiais, separação em componentes e métodos `Str::isUuid()` e `Str::uuid()`. Documentação consultada via Context7 e métodos conferidos na dependência instalada; geração de UUID exige `ramsey/uuid`, ausente no lock atual.
+- **Status:** consultada para revisão técnica; não citada no artigo. Ano não verificado; avaliar critério temporal antes de uso acadêmico.
+
+### Hyperf — Request e parsing JSON
+
+- **Título:** *Request* e implementação de `JsonParser`.
+- **Autores institucionais:** Hyperf e seus colaboradores.
+- **Ano e tipo:** documentação e código oficiais contínuos; ano de publicação não identificado.
+- **DOI:** não identificado.
+- **URLs:** https://github.com/hyperf/hyperf/blob/master/docs/en/request.md e https://github.com/hyperf/hyperf/blob/3.2/src/http-message/src/Server/Request/JsonParser.php .
+- **Data de acesso:** 8 nov. 2026.
+- **Fundamenta:** leitura nativa de dados JSON; na dependência instalada, `JsonParser` lança `BadRequestHttpException` para JSON malformado por padrão. Conferência da duplicação de parsing em `Input::body`.
+- **Status:** consultada para revisão técnica; não citada no artigo. Ano não verificado; avaliar critério temporal antes de uso acadêmico.

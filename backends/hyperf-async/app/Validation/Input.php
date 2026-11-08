@@ -23,22 +23,16 @@ final class Input
         return substr($s, 0, 8).'-'.substr($s, 8, 4).'-'.substr($s, 12, 4).'-'.substr($s, 16, 4).'-'.substr($s, 20);
     }
 
-    public static function text(mixed $v, int $max, bool $trim = false): string
+    public static function normalize(string $value, bool $trim = false): string
     {
-        if (!is_string($v) || !mb_check_encoding($v, 'UTF-8')) {
+        if (!mb_check_encoding($value, 'UTF-8')) {
             throw new ApiError();
         }
-        $v = \Normalizer::normalize($v, \Normalizer::FORM_C);
-        if ($trim) {
-            $v = preg_replace('/^\s+|\s+$/u', '', $v);
-        }
-        if (!preg_match('/\S/u', $v) || mb_strlen($v, 'UTF-8') > $max) {
-            throw new ApiError();
-        }
-        return $v;
+        $value = \Normalizer::normalize($value, \Normalizer::FORM_C);
+        return $trim ? preg_replace('/^\s+|\s+$/u', '', $value) : $value;
     }
 
-    public static function body(string $raw, string $type, array $fields): array
+    public static function body(string $raw, string $type): array
     {
         if (strtolower(trim(explode(';', $type)[0])) !== 'application/json') {
             throw new ApiError(415, 'tipo_midia', 'Envie application/json.');
@@ -51,19 +45,7 @@ final class Input
         if (!$v instanceof \stdClass) {
             throw new ApiError();
         }
-        $v = (array) $v;
-        if (array_diff(array_keys($v), $fields) || array_diff($fields, array_keys($v))) {
-            throw new ApiError();
-        }
-        foreach ($v as $k => $value) {
-            if (str_ends_with($k, '_id')) {
-                if (!is_string($value)) {
-                    throw new ApiError();
-                }
-                $v[$k] = self::uuid($value);
-            }
-        }
-        return $v;
+        return (array) $v;
     }
 
     public static function birth(mixed $v, string $reference): string

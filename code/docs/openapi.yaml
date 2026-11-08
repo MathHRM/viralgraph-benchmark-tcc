@@ -13,7 +13,7 @@ info:
     - IDs são UUIDs representados como strings. IDs produzidos pelo sistema não dependem do banco utilizado.
     - Datas de nascimento em `AAAA-MM-DD`; instantes em UTC, formato RFC 3339.
     - Data de referência para idade registrada no manifesto da execução, igual nas duas arquiteturas. Idade calculada por calendário, não por divisão de dias por 365; para nascidos em 29/02, considerar 01/03 nos anos não bissextos.
-    - Campos obrigatórios rejeitam ausência, `null`, tipos incorretos e strings vazias ou compostas apenas por espaços. Campos desconhecidos retornam 422. Não converter números em strings.
+    - Campos obrigatórios rejeitam ausência, `null`, tipos incorretos e strings vazias ou compostas apenas por espaços. Campos desconhecidos são ignorados e não integram os dados validados. Não converter números em strings.
     - Na composição Hyperf, POST /posts confirma a publicação persistente no RabbitMQ antes do 201 com id e Location; o GET pode retornar 404 até a persistência. Usuários, relações e compartilhamentos persistem antes do 201.
     - Limites de strings medidos em pontos de código Unicode. Sem corte silencioso. Conteúdo de posts preservado; remover espaços externos de nome/apelido antes de validar e persistir; normalizar texto em Unicode NFC, preservando maiúsculas e acentos.
     - Sem edição, exclusão, deixar de seguir ou desfazer compartilhamento nesta versão.
@@ -501,7 +501,7 @@ components:
           format: date
           description: Data válida AAAA-MM-DD, não futura e idade mínima de 18 anos na data de referência do manifesto.
             Cálculo por calendário; aniversário de 29/02 ocorre em 01/03 nos anos não bissextos.
-      additionalProperties: false
+      additionalProperties: true
     Usuario:
       type: object
       required:
@@ -540,7 +540,7 @@ components:
           minLength: 1
           maxLength: 500
           pattern: \S
-      additionalProperties: false
+      additionalProperties: true
     Post:
       type: object
       required:
@@ -572,7 +572,7 @@ components:
           $ref: '#/components/schemas/UUID'
         seguido_id:
           $ref: '#/components/schemas/UUID'
-      additionalProperties: false
+      additionalProperties: true
     CompartilharPost:
       type: object
       required:
@@ -583,7 +583,7 @@ components:
           $ref: '#/components/schemas/UUID'
         post_id:
           $ref: '#/components/schemas/UUID'
-      additionalProperties: false
+      additionalProperties: true
     RelacaoSeguir:
       type: object
       required:
@@ -795,7 +795,7 @@ components:
           schema:
             $ref: '#/components/schemas/Erro'
     '422':
-      description: 'Dados inválidos: ausência, null, tipo incorreto, campo desconhecido, UUID/cursor inválido, duplicidade
+      description: 'Dados inválidos: ausência, null, tipo incorreto, UUID/cursor inválido, duplicidade
         ou violação de regra de negócio.'
       content:
         application/json:
