@@ -3,6 +3,7 @@ declare(strict_types=1);
 namespace App\Request;
 
 use App\Validation\Input;
+use App\Exception\ApiError;
 use Hyperf\Validation\Request\FormRequest;
 
 abstract class ApiRequest extends FormRequest
@@ -18,7 +19,18 @@ abstract class ApiRequest extends FormRequest
     protected function validationData(): array
     {
         if ($this->getMethod() === 'POST') {
-            $data = Input::body((string) $this->getBody(), $this->getHeaderLine('Content-Type'));
+            if (strtolower(trim(explode(';', $this->getHeaderLine('Content-Type'))[0])) !== 'application/json') {
+                throw new ApiError(415, 'tipo_midia', 'Envie application/json.');
+            }
+            $raw = ltrim((string) $this->getBody(), " \t\r\n");
+            if ($raw === '') {
+                throw new ApiError(400, 'json_invalido', 'JSON malformado.');
+            }
+            // O Hyperf já validou e decodificou o JSON; o contrato exige um objeto.
+            if ($raw[0] !== '{') {
+                throw new ApiError();
+            }
+            $data = $this->getParsedBody();
         } else {
             $data = $this->getQueryParams();
             if ($this->routeId) {

@@ -23,7 +23,7 @@ final class UserController extends AbstractController
         return $this->json($response, $user, 201, '/usuarios/'.$user['id']);
     }
 
-    public function show(string $id, ResourceRequest $request, ResponseInterface $response): ResponsePlusInterface
+    public function show(ResourceRequest $request, ResponseInterface $response): ResponsePlusInterface
     {
         return $this->json($response, $this->repository->get($request->validated()['id']));
     }

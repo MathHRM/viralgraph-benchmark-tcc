@@ -24,13 +24,15 @@ As credenciais padrão `benchmark` / `benchmark-local` (Neo4j: usuário `neo4j`)
 O namespace `App\` aponta para `app/`, seguindo o diretório do skeleton Hyperf. O bootstrap HTTP fica em `bin/hyperf.php`; `bin/init.php` e `bin/worker.php` também usam o container. As camadas abaixo são uma decisão deste projeto:
 
 - `Controller/`: ações HTTP explícitas, status e cabeçalhos. As rotas estão em `config/routes.php`.
-- `Request/`: `FormRequest` do `hyperf/validation`, com regras declarativas e dados acessados por `validated()`. O middleware valida antes dos controllers. `ApiRequest` preserva parsing estrito, campos permitidos e normalização NFC antes das regras; IDs são convertidos para minúsculas.
+- `Request/`: `FormRequest` do `hyperf/validation`, com regras declarativas e dados acessados por `validated()`. O middleware valida antes dos controllers. `ApiRequest` usa o JSON já decodificado pelo Hyperf, exige objeto e normaliza NFC antes das regras; campos extras são ignorados e IDs são convertidos para minúsculas.
 - `Service/`: maioridade, auto-relação, permissão para compartilhar e publicação de posts.
 - `Repository/`: consultas específicas de usuários, relações, posts, compartilhamentos, feeds, tarefas e métricas. Cada chamada ao cliente Neo4j continua sendo uma transação.
 - `Infrastructure/`: transporte Neo4j, inicialização do schema e conexão RabbitMQ. `BrokerFactory` abre uma conexão por publicação HTTP; conexões e canais mutáveis não são compartilhados entre corrotinas. O worker mantém sua própria conexão até a reconexão.
-- `Validation/` e `Pagination/`: parsing estrito, NFC, campos permitidos e cursores vinculados à consulta.
+- `Validation/` e `Pagination/`: NFC, maioridade e cursores vinculados à consulta. A validação de UUID dos cursores usa `Str::isUuid()` do Hyperf; formato e calendário de nascimento são validados pelo FormRequest.
 - `Exception/Handler/`: resposta de erro única para falhas da aplicação e do framework.
 - `Worker/`: `Runner` controla coleta, sinais e reconexão; `PostBatchProcessor` confirma depois do commit; `OutboxPublisher` marca tarefas depois da confirmação do broker; `FeedDistributor` confirma somente ao concluir a distribuição.
+
+O parsing JSON e a validação comum ficam nos componentes instalados do Hyperf. Permanecem as regras específicas de objeto JSON, NFC, maioridade e cursor. A geração local de UUID foi mantida porque `Str::uuid()` exige `ramsey/uuid`, ausente no projeto. O transporte AMQP mantém publicação com roteamento obrigatório, confirmação do broker e consumo em lotes com ACK após persistência; a troca pelo produtor padrão de `hyperf/amqp` não preserva diretamente essas garantias.
 
 Controllers, serviços e repositórios recebem dependências pelo construtor. O loop de consumo por `basic_get`, as transações, os formatos públicos e a persistência eventual foram preservados. Combinações GET/POST que já retornavam 404 continuam explícitas nas rotas para manter compatibilidade; outros métodos continuam com 405.
 

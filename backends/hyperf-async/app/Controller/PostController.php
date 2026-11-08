@@ -23,7 +23,7 @@ final class PostController extends AbstractController
         return $this->json($response, ['id' => $id], 201, '/posts/'.$id);
     }
 
-    public function show(string $id, ResourceRequest $request, ResponseInterface $response): ResponsePlusInterface
+    public function show(ResourceRequest $request, ResponseInterface $response): ResponsePlusInterface
     {
         return $this->json($response, $this->repository->get($request->validated()['id']));
     }

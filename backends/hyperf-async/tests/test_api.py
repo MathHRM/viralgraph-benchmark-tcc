@@ -105,13 +105,15 @@ class ContractTest(unittest.TestCase):
 
     def test_validation(self):
         valid = {"nome": "Ana", "apelido": str(uuid.uuid4()), "nascimento": "2000-01-01"}
-        for patch in ({"nome": 12}, {"nome": None}, {"nome": " "}, {"nome": "a" * 33},
+        for patch in ({"nome": 12}, {"nome": None}, {"nome": " "}, {"nome": "\u00a0\u2003"}, {"nome": "a" * 33},
                       {"apelido": "a" * 101}, {"nascimento": "2008-11-09"},
                       {"nascimento": "2000-02-30"}, {"nascimento": "2100-01-01"}):
             self.assertEqual(request("POST", "/usuarios", valid | patch)[0], 422, patch)
         self.assertEqual(request("POST", "/usuarios", raw="{")[0], 400)
+        self.assertEqual(request("POST", "/usuarios", raw="")[0], 400)
+        self.assertEqual(request("POST", "/usuarios", raw=" \t\n")[0], 400)
         self.assertEqual(request("POST", "/usuarios", valid, media="text/plain")[0], 415)
-        for value in ([], 5, None):
+        for value in ([], [valid], 0, 5, None, True, "texto"):
             self.assertEqual(request("POST", "/usuarios", raw=json.dumps(value))[0], 422)
         self.assertEqual(request("POST", "/usuarios", valid | {"nascimento": "2008-11-08"})[0], 201)
         for path in ("/usuarios?x=a", "/posts", "/usuarios?s=%20", "/posts?c=%20",

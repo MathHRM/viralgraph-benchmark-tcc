@@ -14,7 +14,7 @@ final class FeedController extends AbstractController
 {
     public function __construct(private UserRepository $users, private FeedRepository $feeds) {}
 
-    public function index(string $id, FeedRequest $request, ResponseInterface $response): ResponsePlusInterface
+    public function index(FeedRequest $request, ResponseInterface $response): ResponsePlusInterface
     {
         $query = $request->validated();
         $id = $query['id'];

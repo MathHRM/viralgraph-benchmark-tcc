@@ -9,8 +9,8 @@ final class CreateUserRequest extends ApiRequest
     public function rules(): array
     {
         return [
-            'nome' => ['bail', 'required', 'string', 'max:32', 'regex:/\\S/u'],
-            'apelido' => ['bail', 'required', 'string', 'max:100', 'regex:/\\S/u'],
+            'nome' => ['bail', 'required', 'string', 'max:32'],
+            'apelido' => ['bail', 'required', 'string', 'max:100'],
             'nascimento' => 'bail|required|string|date_format:Y-m-d',
         ];
     }

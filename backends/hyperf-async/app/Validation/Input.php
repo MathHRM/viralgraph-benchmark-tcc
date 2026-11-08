@@ -3,17 +3,10 @@ declare(strict_types=1);
 namespace App\Validation;
 
 use App\Exception\ApiError;
+use Hyperf\Stringable\Str;
 
 final class Input
 {
-    public static function uuid(string $id): string
-    {
-        if (!preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/iD', $id)) {
-            throw new ApiError();
-        }
-        return strtolower($id);
-    }
-
     public static function id(): string
     {
         $b = random_bytes(16);
@@ -32,36 +25,15 @@ final class Input
         return $trim ? preg_replace('/^\s+|\s+$/u', '', $value) : $value;
     }
 
-    public static function body(string $raw, string $type): array
+    /** Recebe uma data já validada pela regra date_format do FormRequest. */
+    public static function birth(string $v, string $reference): string
     {
-        if (strtolower(trim(explode(';', $type)[0])) !== 'application/json') {
-            throw new ApiError(415, 'tipo_midia', 'Envie application/json.');
-        }
-        try {
-            $v = json_decode($raw, false, 512, JSON_THROW_ON_ERROR);
-        } catch (\JsonException) {
-            throw new ApiError(400, 'json_invalido', 'JSON malformado.');
-        }
-        if (!$v instanceof \stdClass) {
-            throw new ApiError();
-        }
-        return (array) $v;
-    }
-
-    public static function birth(mixed $v, string $reference): string
-    {
-        if (!is_string($v) || !preg_match('/^\d{4}-\d{2}-\d{2}$/D', $v)) {
-            throw new ApiError();
-        }
         [$y, $m, $d] = array_map('intval', explode('-', $v));
-        if (!checkdate($m, $d, $y)) {
-            throw new ApiError();
-        }
         $anniversary = sprintf('%04d-%02d-%02d', $y + 18, $m, $d);
         if (!checkdate($m, $d, $y + 18)) {
             $anniversary = sprintf('%04d-03-01', $y + 18);
         }
-        if ($anniversary > $reference || $v > $reference) {
+        if ($anniversary > $reference) {
             throw new ApiError();
         }
         return $v;
@@ -77,7 +49,9 @@ final class Input
             if (!is_array($parts) || !array_is_list($parts) || count($parts) !== 3 || $parts[0] !== $scope || !is_int($parts[1]) || $parts[1] < 0 || !is_string($parts[2])) {
                 throw new ApiError();
             }
-            self::uuid($parts[2]);
+            if (!Str::isUuid($parts[2])) {
+                throw new ApiError();
+            }
             return $parts;
         } catch (\JsonException) {
             throw new ApiError();

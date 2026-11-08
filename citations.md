@@ -328,5 +328,16 @@
 - **DOI:** não identificado.
 - **URLs:** https://github.com/hyperf/hyperf/blob/master/docs/en/request.md e https://github.com/hyperf/hyperf/blob/3.2/src/http-message/src/Server/Request/JsonParser.php .
 - **Data de acesso:** 8 nov. 2026.
-- **Fundamenta:** leitura nativa de dados JSON; na dependência instalada, `JsonParser` lança `BadRequestHttpException` para JSON malformado por padrão. Conferência da duplicação de parsing em `Input::body`.
+- **Fundamenta:** leitura nativa de dados JSON; na dependência instalada, `JsonParser` lança `BadRequestHttpException` para JSON malformado por padrão. Conferência da duplicação de parsing em `Input::body`, removida em favor de `getParsedBody()`; preservadas as exigências de mídia JSON e corpo como objeto na aplicação.
+- **Status:** consultada para revisão técnica; não citada no artigo. Ano não verificado; avaliar critério temporal antes de uso acadêmico.
+
+### Hyperf — AMQP
+
+- **Título:** *AMQP*, documentação da branch 3.2.
+- **Autores institucionais:** Hyperf e seus colaboradores.
+- **Ano e tipo:** documentação oficial contínua; ano de publicação não identificado.
+- **DOI/identificador:** branch 3.2 do repositório oficial; DOI não identificado.
+- **URL:** https://github.com/hyperf/hyperf/blob/3.2/docs/en/amqp.md .
+- **Data de acesso:** 8 nov. 2026.
+- **Fundamenta:** componente oficial com produtores, consumidores, pool de conexões, QoS, resultados de confirmação e criação e recuperação de processos consumidores. Consultado para avaliar sobreposição com o transporte RabbitMQ e o ciclo do worker locais; a documentação não estabelece substituição direta da coleta em lotes nem da outbox do projeto.
 - **Status:** consultada para revisão técnica; não citada no artigo. Ano não verificado; avaliar critério temporal antes de uso acadêmico.
