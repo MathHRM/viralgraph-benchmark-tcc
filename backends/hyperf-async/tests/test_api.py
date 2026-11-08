@@ -46,6 +46,38 @@ def wait_for(fn, timeout=35):
 
 
 class ContractTest(unittest.TestCase):
+    def test_concurrent_post_publish(self):
+        author = self.user()
+        contents = ["Publicação concorrente " + str(index) for index in range(12)]
+        def publish(content):
+            status, body, headers = request("POST", "/posts", {"usuario_id": author, "conteudo": content})
+            self.assertEqual(status, 201, body)
+            self.assertIn("/posts/" + body["id"], headers)
+            return body["id"], content
+        with concurrent.futures.ThreadPoolExecutor(max_workers=6) as pool:
+            posts = list(pool.map(publish, contents))
+        self.assertEqual(len({post for post, _ in posts}), len(contents))
+        for post, content in posts:
+            def persisted():
+                result = request("GET", "/posts/" + post)
+                return result[1] if result[0] == 200 else None
+            body = wait_for(persisted)
+            self.assertEqual((body["usuario_id"], body["conteudo"]), (author, content))
+
+    def test_routing_errors(self):
+        route_missing = {"erro": {"codigo": "nao_encontrado", "mensagem": "Rota não encontrada."}}
+        resource_missing = {"erro": {"codigo": "nao_encontrado", "mensagem": "Recurso não encontrado."}}
+        method_invalid = {"erro": {"codigo": "metodo_invalido", "mensagem": "Método não permitido."}}
+        for method, path in [("GET", "/seguir-usuario"), ("GET", "/compartilhar-post"),
+                             ("POST", "/metricas"), ("POST", "/usuarios/id"),
+                             ("POST", "/posts/id"), ("POST", "/feed/id")]:
+            with self.subTest(method=method, path=path):
+                status, body, headers = request(method, path, {})
+                self.assertEqual((status, body), (404, route_missing))
+                self.assertIn("X-Instance", headers)
+        self.assertEqual(request("GET", "/inexistente")[:2], (404, resource_missing))
+        self.assertEqual(request("PUT", "/usuarios", {})[:2], (405, method_invalid))
+
     def user(self, name="Pessoa", nickname=None, instance=None):
         status, body, headers = request("POST", "/usuarios", {
             "nome": name, "apelido": nickname or str(uuid.uuid4()), "nascimento": "2000-01-01"

@@ -1,3 +1,3 @@
 <?php
 declare(strict_types=1);
-return ['handler' => ['http' => [App\HttpErrorHandler::class]]];
+return ['handler' => ['http' => [App\Exception\Handler\HttpErrorHandler::class]]];

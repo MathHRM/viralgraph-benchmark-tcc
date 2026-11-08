@@ -19,6 +19,20 @@ Somente `127.0.0.1:9999` é publicado no host. Nginx usa round-robin, sem afinid
 
 As credenciais padrão `benchmark` / `benchmark-local` (Neo4j: usuário `neo4j`) destinam-se ao ambiente local isolado. `NEO4J_PASSWORD` e `RABBITMQ_PASSWORD` podem ser definidas em `.env` antes da primeira subida. Alterar essas variáveis não migra credenciais já persistidas nos volumes. Não usar dados reais: o contrato do benchmark não tem autenticação.
 
+## Organização do código
+
+O namespace `App\` aponta para `app/`, seguindo o diretório do skeleton Hyperf. O bootstrap HTTP fica em `bin/hyperf.php`; `bin/init.php` e `bin/worker.php` também usam o container. As camadas abaixo são uma decisão deste projeto:
+
+- `Controller/`: ações HTTP explícitas, validação da requisição, status e cabeçalhos. As rotas estão em `config/routes.php`.
+- `Service/`: maioridade, auto-relação, permissão para compartilhar e publicação de posts.
+- `Repository/`: consultas específicas de usuários, relações, posts, compartilhamentos, feeds, tarefas e métricas. Cada chamada ao cliente Neo4j continua sendo uma transação.
+- `Infrastructure/`: transporte Neo4j, inicialização do schema e conexão RabbitMQ. `BrokerFactory` abre uma conexão por publicação HTTP; conexões e canais mutáveis não são compartilhados entre corrotinas. O worker mantém sua própria conexão até a reconexão.
+- `Validation/` e `Pagination/`: parsing estrito, NFC, campos permitidos e cursores vinculados à consulta.
+- `Exception/Handler/`: resposta de erro única para falhas da aplicação e do framework.
+- `Worker/`: `Runner` controla coleta, sinais e reconexão; `PostBatchProcessor` confirma depois do commit; `OutboxPublisher` marca tarefas depois da confirmação do broker; `FeedDistributor` confirma somente ao concluir a distribuição.
+
+Controllers, serviços e repositórios recebem dependências pelo construtor. O loop de consumo por `basic_get`, as transações, os formatos públicos e a persistência eventual foram preservados. Combinações GET/POST que já retornavam 404 continuam explícitas nas rotas para manter compatibilidade; outros métodos continuam com 405.
+
 ## Recursos e configuração
 
 Distribuição inicial **(assumed)**, ainda sem calibração experimental:
@@ -64,10 +78,12 @@ A integração grava dados, interrompe/reinicia o worker e o RabbitMQ e recria o
 
 ```bash
 docker compose exec -T api1 php tests/input.php
+docker compose exec -T api1 php tests/services.php
+docker compose exec -T api1 php tests/worker.php
 python3 -m unittest discover -s tests -p 'test_*.py' -v
 python3 bin/check-budget.py
 ```
 
-Os testes cobrem contrato, Unicode, maioridade, concorrência entre APIs, cursores, cascatas, primeira entrega, replay e recuperação entre commit e ACK. `tests/control.php` é ferramenta interna de teste, sem endpoint HTTP. Para smoke do gerador existente, provisionar projeto Compose separado com volumes vazios e executar `code/k6/run.py --architecture async` a partir da raiz, com configuração curta. Não alterar o critério: o único GET após 1–30 ms precisa retornar 200; persistência eventual pode falhar nele. Consultar o registro de validação local em `tests/VALIDATION.md`.
+Os testes locais de serviços e worker usam substitutos em memória para verificar regras e a ordem das confirmações, inclusive em falhas. A integração real cobre contrato, Unicode, maioridade, concorrência entre APIs, cursores, cascatas, primeira entrega, replay e recuperação entre commit e ACK. `tests/control.php` é ferramenta interna de teste, sem endpoint HTTP. Para smoke do gerador existente, provisionar projeto Compose separado com volumes vazios e executar `code/k6/run.py --architecture async` a partir da raiz, com configuração curta. Não alterar o critério: o único GET após 1–30 ms precisa retornar 200; persistência eventual pode falhar nele. Consultar o registro de validação local em `tests/VALIDATION.md`.
 
 Fontes técnicas consultadas estão registradas em [citations.md](../../citations.md): Hyperf, Docker Compose, RabbitMQ e API transacional do Neo4j. Não foram adicionadas referências ao artigo.

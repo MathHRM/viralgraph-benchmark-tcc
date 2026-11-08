@@ -13,6 +13,40 @@ Esta verificação é de implementação, não uma execução experimental ofici
 - Cinco testes existentes em `code/k6/tests/test_stress.py` passaram, incluindo k6 real contra a fixture do gerador. Os arquivos do gerador não foram alterados.
 - Sintaxe PHP, Python e shell e leitura do OpenAPI YAML verificadas; `git diff --check` sem erros. Não existem `resources/views` ou `app/Livewire` neste checkout.
 
+## Refatoração para `app/`
+
+O red/green começou com `tests/worker.php` falhando porque os componentes separados ainda não existiam. Depois da extração, os testes locais passaram, cobrindo falha de commit sem ACK, JSON inválido sem ACK, publicação recusada sem marcar outbox e encerramento de distribuição sem confirmar tarefa incompleta. `tests/services.php` verifica regras, precedência de recursos inexistentes, maioridade e conexão RabbitMQ independente por operação, fechada também em falhas.
+
+A primeira tentativa de estabelecer a referência encontrou uma imagem antiga em execução: nela, POST de post gravava diretamente no Neo4j, divergindo do código local com RabbitMQ. Essa tentativa teve três falhas e um erro. Após rebuild e recriação apenas dos containers da aplicação, preservando os volumes, os sete testes originais passaram em 97,880 s, antes de executar a versão refatorada. O teste adicional de compatibilidade de roteamento passou também na versão anterior.
+
+O código foi migrado para `app/` com PSR-4, bootstrap `bin/hyperf.php`, controllers explícitos, dependências por construtor, serviços, repositórios específicos, infraestrutura e handler único. O worker mantém o mecanismo de coleta e reconexão anterior, com responsabilidades extraídas. Nenhuma dependência foi adicionada ou atualizada.
+
+Na versão refatorada, os oito testes de integração (sete originais e compatibilidade de roteamento) passaram em 263,724 s. Após o build final e recriação das APIs e do worker, o teste adicional de publicação concorrente passou em 3,566 s: doze posts publicados por seis clientes concorrentes, com IDs distintos e conteúdo persistido conferido. Os três testes PHP (`input.php`, `services.php` e `worker.php`) passaram também na imagem final. Esses tempos são duração da verificação, não medição de desempenho.
+
+Sintaxe PHP, autoload otimizado, `composer validate --strict`, requisitos de plataforma e `git diff --check` passaram. A comparação das consultas extraídas confirmou preservação das transações de schema, persistência, distribuição e métricas. Os seis serviços ficaram saudáveis e `bin/check-budget.py` confirmou 1,50 CPU/3000 MiB, sem swap adicional. Os volumes foram preservados. O smoke k6 abaixo não foi repetido nesta refatoração; nenhuma melhoria de desempenho foi medida.
+
+## Stress completo após a refatoração
+
+Executado com `code/k6/run.py --architecture async`, configuração padrão sem alterações: cenário `cascade`, 12 usuários, seed 42, 205 s de chegadas, pico programado de 740 ações/s, timeout HTTP de 2000 ms, recuperação de 10 s e até 500 VUs por fluxo. Projeto isolado `tcc-hyperf-stress-20261108-1947`, volumes novos e `/metricas` inicialmente zerado. O ambiente de desenvolvimento foi pausado durante a carga; seus volumes foram preservados. Inventário da imagem e limites efetivos registrados: 1,50 CPU/3000 MiB, sem swap adicional. Outros serviços do host permaneceram ativos; não houve isolamento exclusivo da máquina.
+
+O k6 terminou com código 99. Foram 70.530 requisições de negócio, com 66.157 status inesperados (93,80%). Os 422 esperados das buscas inválidas não entram nessa falha. Os thresholds de checks e de ações descartadas falharam: 468 descartes sociais, 59 de busca válida e três de busca inválida, além de duas ações sociais interrompidas. Portanto, o relatório está `invalid`: o envelope programado não foi aplicado integralmente. O pico observado de 913 respostas/s inclui falhas e não representa capacidade útil.
+
+| Rota/fluxo | Requisições | Respostas esperadas | p95 HTTP (ms) |
+| --- | ---: | ---: | ---: |
+| POST de post | 27.061 | 755 com 201 | 2000,89 |
+| Feed | 28.990 | 1.573 com 200 | 2000,91 |
+| Busca válida de posts | 4.765 | 283 com 200 | 2000,89 |
+| Busca válida de usuários | 4.765 | 277 com 200 | 2000,86 |
+| GET após criação | 755 | zero com 200 | 2000,84 |
+
+Nas consultas pós-criação houve 533 respostas 404, 124 falhas de transporte, 97 respostas 503 e uma 502. Predominaram 503 e timeouts nas demais rotas principais. Esses percentis incluem respostas com falha e timeouts; não são latência de operações bem-sucedidas.
+
+Coleta externa por `docker stats`, com timestamp e seleção dos seis containers: Neo4j consumiu em média 0,510 CPU (aproximadamente toda a quota de 0,50) e atingiu 643,3 MiB. Nas 410 amostras durante as chegadas, ficou acima de 90% da quota. As APIs chegaram a 81,17/94,27 MiB, RabbitMQ a 93,31 MiB e worker a 28,66 MiB. Pequenos excessos instantâneos de quota no Docker são amostragem, não alteração dos limites. Os logs das duas APIs registraram `exceed max number of coroutine 256`; Neo4j registrou conexões de resposta encerradas. Ao fim da observação, os seis containers estavam saudáveis, sem OOM ou reinícios. **(inferred)** Há saturação de CPU/acesso ao Neo4j associada ao acúmulo de requisições e esgotamento de corrotinas; esta execução não isolou a consulta ou transporte responsável.
+
+Trinta segundos após o encerramento do runner, havia 3.452 posts persistidos, 133 entradas de feed, 2.721 posts e 3.346 tarefas de distribuição prontas nas filas. Uma consulta posterior ao RabbitMQ encontrou zero posts pendentes e 5.739 tarefas de distribuição prontas, mais uma sem ACK. Antes de encerrar o projeto, `/metricas` registrou 6.229 posts e 1.203 entradas. As consultas são sequenciais e observacionais, sem corte atômico. Posts persistidos superam os 201 observados: timeout do cliente não garante cancelamento da escrita, e não se deve inferir perda ou durabilidade integral dessas contagens. O processamento retomou, mas a recuperação completa da distribuição não foi aguardada. O projeto de stress foi encerrado preservando os volumes e suas pendências; o ambiente padrão foi restaurado.
+
+Artefatos ignorados pelo Git em `tests/results/stress-refactor-20261108/`: relatório k6 e dados brutos em `run/`, `inventory.json`, `docker-stats.jsonl`, amostras de cgroup, `generator-time.txt`, `recovery.jsonl`, `queues-final.txt`, logs completos, `analysis.json` e gráfico `desempenho.png`. `/usr/bin/time` registrou 3 min 46,84 s de runner, máximo RSS de 308.156 KiB e nenhum swap; isso não mede o pico agregado de todos os processos do host. A coleta externa não altera os campos `not_measured` do relatório original. Sem referência anterior equivalente, repetições ou auditoria de integridade, não há conclusão sobre regressão da refatoração, capacidade máxima ou comparação oficial do TCC. Nenhum ajuste de código ou configuração foi feito para melhorar o resultado.
+
 ## Smoke do k6 existente
 
 Executado contra o projeto separado `tcc-hyperf-smoke-final-20261108`, com volumes novos e os mesmos limites efetivos conferidos. Configuração curta: cenário `cascade`, seed 42, três usuários, data de referência 2026-11-08, escalas de taxa e tempo 0,02, três VUs pré-alocados, máximo 20, timeout 2000 ms, consulta de feed a cada 100 ms por até 3000 ms, setup 10000 ms, recuperação e graceful stop de um segundo, frações de post e compartilhamento 1 e buckets de um segundo.

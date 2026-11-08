@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
-namespace App;
+namespace App\Validation;
+
+use App\Exception\ApiError;
 
 final class Input
 {

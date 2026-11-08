@@ -1,11 +1,11 @@
 <?php
 declare(strict_types=1);
-namespace App;
+namespace App\Infrastructure\RabbitMQ;
 
 use PhpAmqpLib\Connection\AMQPStreamConnection;
 use PhpAmqpLib\Message\AMQPMessage;
 
-final class Broker
+class Broker
 {
     public readonly AMQPStreamConnection $connection;
     public readonly \PhpAmqpLib\Channel\AMQPChannel $channel;

@@ -256,13 +256,13 @@
 
 ### Hyperf — inicialização e servidor HTTP
 
-- **Título:** *Hyperf documentation* e *hyperf-skeleton*, branch 3.1 (convenções de bootstrap).
+- **Título:** *Hyperf documentation* e *hyperf-skeleton*, branch 3.1 (convenções de bootstrap); *Dependency Injection*, branch 3.2, e skeleton oficial em `master` (organização e injeção de dependências).
 - **Autores institucionais:** Hyperf e seus colaboradores.
 - **Ano e tipo:** documentação e código oficiais contínuos; ano de publicação não identificado.
 - **DOI/identificador:** não identificado; repositórios oficiais Hyperf.
-- **URLs:** https://github.com/hyperf/hyperf e https://github.com/hyperf/hyperf-skeleton/tree/3.1 .
+- **URLs:** https://github.com/hyperf/hyperf e https://github.com/hyperf/hyperf-skeleton/tree/3.1 ; https://github.com/hyperf/hyperf-skeleton ; https://github.com/hyperf/hyperf/blob/3.2/docs/en/di.md .
 - **Data de acesso:** 8 nov. 2026.
-- **Fundamenta:** inicialização do contêiner, registro de rotas, callbacks e configuração do servidor HTTP; a implementação usa dependências 3.2 travadas no Composer por compatibilidade com PHP 8.4.
+- **Fundamenta:** inicialização do contêiner, registro de rotas, callbacks e configuração do servidor HTTP; a implementação usa dependências 3.2 travadas no Composer por compatibilidade com PHP 8.4. Reconsultada em 8 nov. 2026 para planejar a refatoração: organização do skeleton, controllers criados pelo contêiner, injeção por construtor, bindings e cuidados com objetos de longa duração e estado por corrotina. A separação proposta entre serviços, repositórios e worker é uma decisão local, não uma estrutura obrigatória do framework.
 - **Status:** consultada para implementação técnica; não citada no artigo. Ano não verificado; avaliar critério temporal antes de uso acadêmico.
 
 ### Docker — Services

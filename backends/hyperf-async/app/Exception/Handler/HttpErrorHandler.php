@@ -1,7 +1,8 @@
 <?php
 declare(strict_types=1);
-namespace App;
+namespace App\Exception\Handler;
 
+use App\Exception\ApiError;
 use Hyperf\ExceptionHandler\ExceptionHandler;
 use Hyperf\HttpMessage\Exception\HttpException;
 use Hyperf\HttpMessage\Stream\SwooleStream;
@@ -17,13 +18,17 @@ final class HttpErrorHandler extends ExceptionHandler
 
     public function handle(\Throwable $throwable, ResponsePlusInterface $response)
     {
-        $status = $throwable instanceof HttpException ? $throwable->getStatusCode() : 503;
+        $status = $throwable instanceof ApiError ? $throwable->status
+            : ($throwable instanceof HttpException ? $throwable->getStatusCode() : 503);
         [$code, $message] = match ($status) {
             400 => ['json_invalido', 'JSON malformado.'],
             404 => ['nao_encontrado', 'Recurso não encontrado.'],
             405 => ['metodo_invalido', 'Método não permitido.'],
             default => ['indisponivel', 'Serviço temporariamente indisponível.'],
         };
+        if ($throwable instanceof ApiError) {
+            [$code, $message] = [$throwable->codigo, $throwable->getMessage()];
+        }
         if ($status >= 500) {
             error_log($throwable->getMessage());
         }

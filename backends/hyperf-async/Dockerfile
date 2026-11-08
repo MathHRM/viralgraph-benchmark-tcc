@@ -5,7 +5,7 @@ WORKDIR /app
 COPY composer.json composer.lock ./
 RUN composer install --no-dev --no-interaction --no-progress --optimize-autoloader
 COPY . .
-RUN mkdir -p runtime && chown -R nobody:nobody runtime
+RUN composer dump-autoload --no-dev --optimize && mkdir -p runtime && chown -R nobody:nobody runtime
 USER nobody
 ENTRYPOINT ["sh", "bin/entrypoint.sh"]
-CMD ["php", "bin/server.php", "start"]
+CMD ["php", "bin/hyperf.php", "start"]

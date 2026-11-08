@@ -1,26 +1,23 @@
 <?php
 declare(strict_types=1);
+use App\Controller\{UserController, FollowController, PostController, ShareController, FeedController, MetricsController, NotFoundController};
 use Hyperf\HttpServer\Router\Router;
 
-$handler = function (\Hyperf\HttpServer\Contract\RequestInterface $request, \Hyperf\HttpServer\Contract\ResponseInterface $response) {
-    try {
-        [$status, $body, $location] = (new App\Api())->handle(
-            $request->getMethod(), $request->getUri()->getPath(), $request->getQueryParams(),
-            (string) $request->getBody(), $request->getHeaderLine('Content-Type')
-        );
-    } catch (App\ApiError $e) {
-        $status = $e->status;
-        $body = ['erro' => ['codigo' => $e->codigo, 'mensagem' => $e->getMessage()]];
-        $location = null;
-    } catch (Throwable $e) {
-        error_log($e->getMessage());
-        $status = 503;
-        $body = ['erro' => ['codigo' => 'indisponivel', 'mensagem' => 'Serviço temporariamente indisponível.']];
-        $location = null;
-    }
-    $result = $response->json($body)->withStatus($status)->withHeader('X-Instance', gethostname());
-    return $location ? $result->withHeader('Location', $location) : $result;
-};
-foreach (['/usuarios', '/posts', '/seguir-usuario', '/compartilhar-post', '/metricas', '/usuarios/{id}', '/posts/{id}', '/feed/{id}'] as $path) {
-    Router::addRoute(['GET', 'POST'], $path, $handler);
+Router::get('/usuarios', [UserController::class, 'search']);
+Router::post('/usuarios', [UserController::class, 'create']);
+Router::get('/usuarios/{id}', [UserController::class, 'show']);
+Router::post('/seguir-usuario', [FollowController::class, 'create']);
+Router::get('/posts', [PostController::class, 'search']);
+Router::post('/posts', [PostController::class, 'create']);
+Router::get('/posts/{id}', [PostController::class, 'show']);
+Router::post('/compartilhar-post', [ShareController::class, 'create']);
+Router::get('/feed/{id}', [FeedController::class, 'index']);
+Router::get('/metricas', [MetricsController::class, 'index']);
+
+// Preserva o 404 histórico destas combinações; outros métodos continuam retornando 405.
+foreach (['/seguir-usuario', '/compartilhar-post'] as $path) {
+    Router::get($path, [NotFoundController::class, 'index']);
+}
+foreach (['/usuarios/{id}', '/posts/{id}', '/feed/{id}', '/metricas'] as $path) {
+    Router::post($path, [NotFoundController::class, 'index']);
 }
