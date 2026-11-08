@@ -14,8 +14,7 @@
     "hyperf/framework": "~3.2.0",
     "hyperf/http-server": "~3.2.0",
     "hyperf/validation": "~3.2.0",
-    "php-amqplib/php-amqplib": "^3.7",
-    "symfony/polyfill-intl-normalizer": "^1.33"
+    "php-amqplib/php-amqplib": "^3.7"
   },
   "autoload": {
     "psr-4": {

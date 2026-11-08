@@ -2,9 +2,14 @@
 declare(strict_types=1);
 namespace App\Request;
 
-final class CreatePostRequest extends ApiRequest
+use Hyperf\Validation\Request\FormRequest;
+
+final class CreatePostRequest extends FormRequest
 {
-    protected array $texts = ['conteudo' => false];
+    public function authorize(): bool
+    {
+        return true;
+    }
 
     public function rules(): array
     {

@@ -2,8 +2,14 @@
 declare(strict_types=1);
 namespace App\Request;
 
-final class CreateShareRequest extends ApiRequest
+use Hyperf\Validation\Request\FormRequest;
+
+final class CreateShareRequest extends FormRequest
 {
+    public function authorize(): bool
+    {
+        return true;
+    }
 
     public function rules(): array
     {

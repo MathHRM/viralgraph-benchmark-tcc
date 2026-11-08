@@ -2,8 +2,14 @@
 declare(strict_types=1);
 namespace App\Request;
 
-final class CreateFollowRequest extends ApiRequest
+use Hyperf\Validation\Request\FormRequest;
+
+final class CreateFollowRequest extends FormRequest
 {
+    public function authorize(): bool
+    {
+        return true;
+    }
 
     public function rules(): array
     {

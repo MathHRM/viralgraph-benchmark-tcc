@@ -16,15 +16,6 @@ final class Input
         return substr($s, 0, 8).'-'.substr($s, 8, 4).'-'.substr($s, 12, 4).'-'.substr($s, 16, 4).'-'.substr($s, 20);
     }
 
-    public static function normalize(string $value, bool $trim = false): string
-    {
-        if (!mb_check_encoding($value, 'UTF-8')) {
-            throw new ApiError();
-        }
-        $value = \Normalizer::normalize($value, \Normalizer::FORM_C);
-        return $trim ? preg_replace('/^\s+|\s+$/u', '', $value) : $value;
-    }
-
     /** Recebe uma data já validada pela regra date_format do FormRequest. */
     public static function birth(string $v, string $reference): string
     {

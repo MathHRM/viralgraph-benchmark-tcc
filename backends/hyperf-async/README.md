@@ -15,7 +15,7 @@ python3 bin/check-budget.py
 curl http://127.0.0.1:9999/metricas
 ```
 
-Somente `127.0.0.1:9999` é publicado no host. Nginx usa round-robin, sem afinidade e com `proxy_next_upstream off`, inclusive para POST. `X-Instance` identifica a API que respondeu. APIs não consomem filas. A mesma imagem atende APIs e worker; o entrypoint da API 1 inicializa constraints idempotentes antes de liberar as demais aplicações; `composer.lock` e os digests das imagens fixam dependências. O cliente AMQP oferece confirmações do broker; o polyfill de normalização mantém NFC sem adicionar uma extensão ao runtime. O cliente Neo4j usa a API HTTP transacional oficial, por meio de cURL.
+Somente `127.0.0.1:9999` é publicado no host. Nginx usa round-robin, sem afinidade e com `proxy_next_upstream off`, inclusive para POST. `X-Instance` identifica a API que respondeu. APIs não consomem filas. A mesma imagem atende APIs e worker; o entrypoint da API 1 inicializa constraints idempotentes antes de liberar as demais aplicações; `composer.lock` e os digests das imagens fixam dependências. O cliente AMQP oferece confirmações do broker. O cliente Neo4j usa a API HTTP transacional oficial, por meio de cURL.
 
 As credenciais padrão `benchmark` / `benchmark-local` (Neo4j: usuário `neo4j`) destinam-se ao ambiente local isolado. `NEO4J_PASSWORD` e `RABBITMQ_PASSWORD` podem ser definidas em `.env` antes da primeira subida. Alterar essas variáveis não migra credenciais já persistidas nos volumes. Não usar dados reais: o contrato do benchmark não tem autenticação.
 
@@ -24,15 +24,15 @@ As credenciais padrão `benchmark` / `benchmark-local` (Neo4j: usuário `neo4j`)
 O namespace `App\` aponta para `app/`, seguindo o diretório do skeleton Hyperf. O bootstrap HTTP fica em `bin/hyperf.php`; `bin/init.php` e `bin/worker.php` também usam o container. As camadas abaixo são uma decisão deste projeto:
 
 - `Controller/`: ações HTTP explícitas, status e cabeçalhos. As rotas estão em `config/routes.php`.
-- `Request/`: `FormRequest` do `hyperf/validation`, com regras declarativas e dados acessados por `validated()`. O middleware valida antes dos controllers. `ApiRequest` usa o JSON já decodificado pelo Hyperf, exige objeto e normaliza NFC antes das regras; campos extras são ignorados e IDs são convertidos para minúsculas.
+- `Request/`: `FormRequest` do `hyperf/validation`, com regras declarativas e dados acessados por `validated()`. O middleware valida antes dos controllers. Os requests estendem diretamente `FormRequest`; campos extras são ignorados e IDs são preservados como recebidos.
 - `Service/`: maioridade, auto-relação, permissão para compartilhar e publicação de posts.
 - `Repository/`: consultas específicas de usuários, relações, posts, compartilhamentos, feeds, tarefas e métricas. Cada chamada ao cliente Neo4j continua sendo uma transação.
 - `Infrastructure/`: transporte Neo4j, inicialização do schema e conexão RabbitMQ. `BrokerFactory` abre uma conexão por publicação HTTP; conexões e canais mutáveis não são compartilhados entre corrotinas. O worker mantém sua própria conexão até a reconexão.
-- `Validation/` e `Pagination/`: NFC, maioridade e cursores vinculados à consulta. A validação de UUID dos cursores usa `Str::isUuid()` do Hyperf; formato e calendário de nascimento são validados pelo FormRequest.
+- `Validation/` e `Pagination/`: maioridade e cursores vinculados à consulta. A validação de UUID dos cursores usa `Str::isUuid()` do Hyperf; formato e calendário de nascimento são validados pelo FormRequest.
 - `Exception/Handler/`: resposta de erro única para falhas da aplicação e do framework.
 - `Worker/`: `Runner` controla coleta, sinais e reconexão; `PostBatchProcessor` confirma depois do commit; `OutboxPublisher` marca tarefas depois da confirmação do broker; `FeedDistributor` confirma somente ao concluir a distribuição.
 
-O parsing JSON e a validação comum ficam nos componentes instalados do Hyperf. Permanecem as regras específicas de objeto JSON, NFC, maioridade e cursor. A geração local de UUID foi mantida porque `Str::uuid()` exige `ramsey/uuid`, ausente no projeto. O transporte AMQP mantém publicação com roteamento obrigatório, confirmação do broker e consumo em lotes com ACK após persistência; a troca pelo produtor padrão de `hyperf/amqp` não preserva diretamente essas garantias.
+Textos são validados e persistidos como recebidos, sem normalização Unicode ou remoção de espaços externos, conforme a decisão de remover o normalizador. Esta implementação difere da exigência de NFC e remoção de espaços ainda descrita no contrato comum; esses comportamentos não devem ser considerados equivalentes em uma comparação entre as arquiteturas. O parsing JSON e a validação comum ficam nos componentes instalados do Hyperf. Permanecem as regras específicas de maioridade e cursor. A geração local de UUID foi mantida porque `Str::uuid()` exige `ramsey/uuid`, ausente no projeto. O transporte AMQP mantém publicação com roteamento obrigatório, confirmação do broker e consumo em lotes com ACK após persistência; a troca pelo produtor padrão de `hyperf/amqp` não preserva diretamente essas garantias.
 
 Controllers, serviços e repositórios recebem dependências pelo construtor. O loop de consumo por `basic_get`, as transações, os formatos públicos e a persistência eventual foram preservados. Combinações GET/POST que já retornavam 404 continuam explícitas nas rotas para manter compatibilidade; outros métodos continuam com 405.
 
@@ -58,7 +58,7 @@ Variáveis: `NGINX_CPUS`, `NGINX_MEMORY`, `API_CPUS`, `API_MEMORY` (cada API), `
 
 ## Persistência e recuperação
 
-- Usuários, relações e compartilhamentos são confirmados no Neo4j antes do 201. Constraints protegem apelidos NFC, pares direcionados e pares usuário/post contra concorrência.
+- Usuários, relações e compartilhamentos são confirmados no Neo4j antes do 201. Constraints protegem apelidos, pares direcionados e pares usuário/post contra concorrência.
 - Apenas posts retornam `{id}` e `Location` após publisher confirm do RabbitMQ. O autor é validado antes. Filas duráveis e mensagens persistentes permitem recuperar pendências; indisponibilidade retorna 503. Uma falha após o broker confirmar mas antes da resposta ao cliente continua sendo ambígua, pois o contrato não tem chave de idempotência do cliente.
 - O worker grava posts com `UNWIND`/`MERGE`, em transação idempotente, e só depois confirma consumo. A tarefa de distribuição é gravada na mesma transação do post ou compartilhamento: a outbox é publicada com confirmação antes de marcar `published`. Falha entre essas etapas pode duplicar a mensagem; não perde a tarefa.
 - Relações sociais são nós `Follow` únicos ligados por `FOLLOWS`/`TARGET`; posts usam `AUTHORED` e compartilhamentos `SHARED`/`ORIGINAL`. O fan-out percorre seguidores no grafo em lotes. Um contador social fixa os seguidores elegíveis na transação que persiste o post ou compartilhamento; relações posteriores ficam fora dessa tarefa, mesmo com distribuição atrasada. Leituras apenas consultam entradas materializadas.

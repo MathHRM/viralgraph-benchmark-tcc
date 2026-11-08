@@ -2,9 +2,19 @@
 declare(strict_types=1);
 namespace App\Request;
 
-final class SearchPostRequest extends ApiRequest
+use Hyperf\Validation\Request\FormRequest;
+
+final class SearchPostRequest extends FormRequest
 {
-    protected array $texts = ['c' => false];
+    public function authorize(): bool
+    {
+        return true;
+    }
+
+    protected function validationData(): array
+    {
+        return $this->getQueryParams();
+    }
 
     public function rules(): array
     {

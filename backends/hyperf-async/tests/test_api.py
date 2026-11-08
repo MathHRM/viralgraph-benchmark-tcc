@@ -9,7 +9,6 @@ import urllib.error
 import urllib.parse
 import urllib.request
 import uuid
-import unicodedata
 
 ROOT = Path(__file__).resolve().parents[1]
 COMPOSE = ["docker", "compose", "-f", str(ROOT / "compose.yaml")]
@@ -112,7 +111,7 @@ class ContractTest(unittest.TestCase):
         self.assertEqual(request("POST", "/usuarios", raw="{")[0], 400)
         self.assertEqual(request("POST", "/usuarios", raw="")[0], 400)
         self.assertEqual(request("POST", "/usuarios", raw=" \t\n")[0], 400)
-        self.assertEqual(request("POST", "/usuarios", valid, media="text/plain")[0], 415)
+        self.assertEqual(request("POST", "/usuarios", valid, media="text/plain")[0], 422)
         for value in ([], [valid], 0, 5, None, True, "texto"):
             self.assertEqual(request("POST", "/usuarios", raw=json.dumps(value))[0], 422)
         self.assertEqual(request("POST", "/usuarios", valid | {"nascimento": "2008-11-08"})[0], 201)
@@ -139,7 +138,7 @@ class ContractTest(unittest.TestCase):
         for value in (False, [], {}, "\u2003", "😀" * 33):
             self.assertEqual(request("POST", "/usuarios", valid | {"nome": value})[:2], (422, error))
         self.user(name="😀" * 32)
-        self.user(name=" A\u0301" + "a" * 31 + " ")
+        self.assertEqual(request("POST", "/usuarios", valid | {"nome": " A\u0301" + "a" * 31 + " "})[0], 422)
         author = self.user()
         for path, valid_payload, field in [
             ("/posts", {"usuario_id": author, "conteudo": "texto"}, "usuario_id"),
@@ -148,7 +147,7 @@ class ContractTest(unittest.TestCase):
         ]:
             for value in (None, 123, [], {}, "bad", author + "\n"):
                 self.assertEqual(request("POST", path, valid_payload | {field: value})[:2], (422, error))
-        self.assertEqual(request("GET", "/usuarios/" + author.upper())[1]["id"], author)
+        self.assertEqual(request("GET", "/usuarios/" + author.upper())[0], 404)
         for path in ("/usuarios?s[]=Ana", "/posts?c[]=texto", "/usuarios?s=Ana&cursor[]=x"):
             self.assertEqual(request("GET", path)[:2], (422, error))
         extra_user = valid | {"apelido": str(uuid.uuid4()), "extra": {"qualquer": True}}
@@ -176,8 +175,8 @@ class ContractTest(unittest.TestCase):
             }, instance), ["api1", "api2"]))
         self.assertEqual(sorted(r[0] for r in results), [201, 422])
         winner = next(r[1] for r in results if r[0] == 201)
-        self.assertEqual(winner["nome"], "Ána")
-        self.assertEqual(winner["apelido"], nickname)
+        self.assertEqual(winner["nome"], " A\u0301na ")
+        self.assertEqual(winner["apelido"], " " + nickname.replace("á", "a\u0301") + " ")
         a, b = winner["id"], self.user()
         for path, payload in [
             ("/seguir-usuario", {"seguidor_id": a, "seguido_id": b}),
@@ -189,7 +188,7 @@ class ContractTest(unittest.TestCase):
         self.assertEqual(request("POST", "/seguir-usuario", {"seguidor_id": a, "seguido_id": str(uuid.uuid4())})[0], 404)
         p = self.post(b, "  café\u0301 😀  ")
         data = wait_for(lambda: request("GET", "/posts/" + p, instance="api2")[1].get("conteudo"))
-        self.assertEqual(data, unicodedata.normalize("NFC", "  café\u0301 😀  "))
+        self.assertEqual(data, "  café\u0301 😀  ")
         wait_for(lambda: any(x["post"]["id"] == p for x in self.feed(a)))
         with concurrent.futures.ThreadPoolExecutor(2) as pool:
             responses = list(pool.map(lambda instance: request("POST", "/compartilhar-post", {
