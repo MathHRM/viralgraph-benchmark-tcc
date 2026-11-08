@@ -104,7 +104,7 @@ A consolidação lê os pontos em sequência e retém amostras de latência para
 - Não há coleta de CPU, RAM, disco, filas ou traces, nem validação automática de imagens/limites efetivos do backend. Ausência é `null`, nunca zero simulado.
 - A preparação gera topologias sintéticas simples. Não afirma representar uma rede social real nem mede por si só a centralidade do grafo.
 
-O backend ainda não existe neste checkout. Esses limites dependem de implementação/integração posterior, sem necessidade de inventar endpoints adicionais ao contrato aprovado.
+O backend assíncrono está em [backends/hyperf-async](../../backends/hyperf-async/README.md). A preservação do corte e a auditoria final ainda dependem de integração; suas contagens não constituem pontuação final validada.
 
 ## Verificação local
 

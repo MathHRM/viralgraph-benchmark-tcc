@@ -37,7 +37,7 @@
 - **Ano e tipo:** 2026; documentação oficial.
 - **URL:** [rabbitmq.com/docs/confirms](https://www.rabbitmq.com/docs/confirms).
 - **Data de acesso:** 21 set. 2026.
-- **Fundamenta:** distinção entre confirmações de entrega pelo consumidor e confirmações ao publicador.
+- **Fundamenta:** distinção entre confirmações de entrega pelo consumidor e confirmações ao publicador. Reconsultada em 8 nov. 2026 para implementar mensagens persistentes, filas duráveis, publisher confirms e ACK após commit no backend assíncrono.
 - **Status:** citada no artigo.
 
 ### Neo4j (2026)
@@ -253,3 +253,47 @@
 - **Data de acesso:** 8 nov. 2026.
 - **Fundamenta:** estrutura da descrição OpenAPI em YAML, operações HTTP, parâmetros, schemas, respostas e componentes reutilizáveis de `code/docs/openapi.yaml`.
 - **Status:** consultada para documentação técnica; não citada no artigo.
+
+### Hyperf — inicialização e servidor HTTP
+
+- **Título:** *Hyperf documentation* e *hyperf-skeleton*, branch 3.1 (convenções de bootstrap).
+- **Autores institucionais:** Hyperf e seus colaboradores.
+- **Ano e tipo:** documentação e código oficiais contínuos; ano de publicação não identificado.
+- **DOI/identificador:** não identificado; repositórios oficiais Hyperf.
+- **URLs:** https://github.com/hyperf/hyperf e https://github.com/hyperf/hyperf-skeleton/tree/3.1 .
+- **Data de acesso:** 8 nov. 2026.
+- **Fundamenta:** inicialização do contêiner, registro de rotas, callbacks e configuração do servidor HTTP; a implementação usa dependências 3.2 travadas no Composer por compatibilidade com PHP 8.4.
+- **Status:** consultada para implementação técnica; não citada no artigo. Ano não verificado; avaliar critério temporal antes de uso acadêmico.
+
+### Docker — Services
+
+- **Título:** *Services* (Compose file reference).
+- **Autor institucional:** Docker.
+- **Ano e tipo:** documentação oficial contínua; ano de publicação não identificado.
+- **DOI:** não identificado.
+- **URL:** https://docs.docker.com/reference/compose-file/services/ .
+- **Data de acesso:** 8 nov. 2026.
+- **Fundamenta:** limites `cpus`, `mem_limit`, `memswap_limit`, healthchecks e condições de inicialização do Compose. Limites efetivos verificados com Docker, sem presumir aplicação apenas pelo YAML.
+- **Status:** consultada para implementação técnica; não citada no artigo. Ano não verificado; avaliar critério temporal antes de uso acadêmico.
+
+### Neo4j — HTTP API: Transactions
+
+- **Título:** *Transactions* (HTTP API).
+- **Autor institucional:** Neo4j.
+- **Ano e tipo:** documentação oficial contínua; ano de publicação não identificado.
+- **DOI:** não identificado.
+- **URL:** https://neo4j.com/docs/http-api/current/transactions/ .
+- **Data de acesso:** 8 nov. 2026.
+- **Fundamenta:** endpoint transacional HTTP, parâmetros, confirmação atômica e erros retornados no corpo; usado para persistência em lotes e outbox na mesma transação.
+- **Status:** consultada para implementação técnica; não citada no artigo. Ano não verificado; avaliar critério temporal antes de uso acadêmico.
+
+### RabbitMQ — identidade do nó e diretório persistente
+
+- **Títulos:** *Clustering Guide*, *Configuration* e *File and Directory Locations*.
+- **Autor institucional:** RabbitMQ.
+- **Ano e tipo:** documentação oficial contínua; ano de publicação não identificado.
+- **DOI:** não identificado.
+- **URLs:** https://www.rabbitmq.com/docs/clustering , https://www.rabbitmq.com/docs/configure e https://www.rabbitmq.com/docs/relocate .
+- **Data de acesso:** 8 nov. 2026.
+- **Fundamenta:** nome padrão do nó derivado do hostname e diretório de dados derivado desse nome; hostname fixo no Compose para preservar acesso às filas ao recriar o container.
+- **Status:** consultada para recuperação operacional; não citada no artigo. Ano não verificado; avaliar critério temporal antes de uso acadêmico.
