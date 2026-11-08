@@ -24,6 +24,21 @@ A observabilidade, apoiada por ferramentas como Prometheus, Grafana e OpenTeleme
 
 - Bernardo Jeunon de Alencar
 
+## Entregas do TCC
+
+Cronograma transcrito da imagem do documento da disciplina enviada pelos autores, intitulada “Quadro 1 – Caracterização dos Pontos de Controle do TCC”. As datas são prazos máximos.
+
+| Ponto de controle | Prazo      | Pontuação     | Produto a ser entregue                                                                                                                                                                                                                           |
+| ----------------- | ---------- | ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 0                 | 07/08/2026 | Não informada | Divulgação dos orientadores.                                                                                                                                                                                                                     |
+| 1                 | 30/08/2026 | 10            | Introdução com contextualização/motivação, justificativa, problema abordado, objetivos gerais e específicos e descrição sucinta das seções do restante do texto. Trabalhos relacionados.                                                         |
+| 2                 | 20/09/2026 | 10            | Referencial teórico e metodologia. A metodologia deve conter o tipo de pesquisa científica empregado; descrição do trabalho com diagramas, fluxogramas, figuras e textos que detalhem suas etapas; indicação das ferramentas a serem utilizadas. |
+| 3                 | 18/10/2026 | 10            | Resultados comentados e analisados.                                                                                                                                                                                                              |
+| 4                 | 08/11/2026 | 10            | Conclusões e trabalhos futuros.                                                                                                                                                                                                                  |
+| 5                 | 29/11/2026 | 10            | Artigo completo, incorporando as alterações propostas pelo orientador ao documento entregue no ponto de controle 4, incluindo resumo e palavras-chave.                                                                                           |
+
+A entrega 4 corresponde, portanto, a **conclusões e trabalhos futuros**. A execução dos experimentos e a coleta de métricas são etapas da pesquisa e não correspondem à definição dessa entrega no cronograma.
+
 ## Organização do repositório
 
 ```text

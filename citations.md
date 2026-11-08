@@ -185,3 +185,71 @@
 - **Ano e publicação:** 2021; livro acadêmico, 3. ed., Rio de Janeiro: LTC.
 - **Fundamenta:** classificação e planejamento metodológico de pesquisas em ciência da computação.
 - **Status:** citada no artigo.
+
+### Rinha de Backend (2023 Q3)
+
+- **Título:** *Rinha de Backend - Edição 2023 Q3*.
+- **Autores:** Zan Franceschi (perfil `zanfranceschi`) e colaboradores do repositório.
+- **Ano e tipo:** 2023; repositório oficial, regulamento e código-fonte do teste de estresse, publicados no GitHub.
+- **DOI:** não identificado; identificador do repositório: `zanfranceschi/rinha-de-backend-2023-q3`.
+- **URL:** [repositório original](https://github.com/zanfranceschi/rinha-de-backend-2023-q3).
+- **Arquivos consultados:** `README.md`, `INSTRUCOES.md`, `rinha-primeira-fase.sh`, `rinha-final-live.sh`, `stress-test/README.md`, `stress-test/geracao_recursos.py`, `stress-test/run-test-aws.sh`, `stress-test/user-files/simulations/rinhabackend/RinhaBackendSimulation.scala` e `teste/gatling/user-files/simulations/rinhabackend/RinhaBackendSimulation.scala`.
+- **Data de acesso:** 8 nov. 2026.
+- **Fundamenta:** uso de Gatling, cenários simultâneos de criação/consulta e buscas, fase inicial de 25 segundos, rampas de chegada de três minutos, limites globais de 1,5 CPU e 3 GB de memória, execução com duas instâncias atrás de Nginx e classificação por quantidade persistida. Os scripts do torneio usam `stress-test/`, cuja simulação tem taxas finais de 600, 100 e 40 usuários por segundo; a cópia em `teste/gatling/` tem taxas finais de 300, 50 e 20. O gerador solicita 100.000 payloads e 5.000 termos de busca, consumidos circularmente pela simulação, sem definir população social inicial. Inserts são registros de pessoas persistidos, auditados por `/contagem-pessoas`, e não comandos de escrita ou respostas HTTP. A simulação não tem grafo social nem patamar de pico; o script da primeira fase solicita contagem após encerrar o gerador, sem espera adicional explícita para recuperação.
+- **Status:** consultada para esclarecimento técnico; não citada no artigo.
+
+### Fielding, Nottingham e Reschke (2022)
+
+- **Título:** *HTTP Semantics* (RFC 9110).
+- **Autores:** Roy T. Fielding; Mark Nottingham; Julian Reschke (editores).
+- **Ano e tipo:** 2022; padrão técnico oficial IETF, publicado pelo RFC Editor, STD 97.
+- **DOI:** [10.17487/RFC9110](https://doi.org/10.17487/RFC9110).
+- **URL:** [rfc-editor.org/rfc/rfc9110.html](https://www.rfc-editor.org/rfc/rfc9110.html).
+- **Data de acesso:** 8 nov. 2026.
+- **Fundamenta:** distinção entre 201 (recurso criado) e 202 (processamento aceito e ainda não concluído) na discussão do contrato da API.
+- **Status:** consultada e referenciada na documentação técnica; não citada no artigo.
+
+### Docker — Compose Deploy Specification
+
+- **Título:** *Compose Deploy Specification*.
+- **Autor institucional:** Docker.
+- **Ano e tipo:** documentação oficial contínua; ano de publicação não identificado.
+- **DOI:** não identificado.
+- **URL:** [docs.docker.com/reference/compose-file/deploy](https://docs.docker.com/reference/compose-file/deploy/).
+- **Data de acesso:** 8 nov. 2026.
+- **Fundamenta:** configuração de recursos e caráter opcional da especificação de deploy; necessidade de verificar os limites efetivos no ambiente experimental.
+- **Status:** consultada e referenciada na documentação técnica; não citada no artigo. Ano não verificado; avaliar o critério temporal antes de uso acadêmico.
+
+### Grafana Labs — Open and closed models
+
+- **Título:** *Open and closed models*.
+- **Autor institucional:** Grafana Labs.
+- **Ano e tipo:** documentação oficial contínua do k6; ano de publicação não identificado.
+- **DOI:** não identificado.
+- **URL:** [grafana.com/docs/k6/latest/using-k6/scenarios/concepts/open-vs-closed](https://grafana.com/docs/k6/latest/using-k6/scenarios/concepts/open-vs-closed/).
+- **Data de acesso:** 8 nov. 2026.
+- **Fundamenta:** distinção entre modelos aberto e fechado de geração de carga e dependência entre duração das iterações e taxa de chegada no modelo fechado.
+- **Status:** consultada e referenciada na documentação técnica; não citada no artigo. Ano não verificado; avaliar o critério temporal antes de uso acadêmico.
+
+
+### Grafana Labs — k6: executores e relatórios
+
+- **Títulos:** *Ramping arrival rate*, *JSON* e *Custom summary*.
+- **Autor institucional:** Grafana Labs e colaboradores do k6.
+- **Ano e tipo:** documentação oficial contínua; ano de publicação não identificado.
+- **DOI:** não identificado; repositório oficial `grafana/k6-docs`.
+- **URLs:** [executor](https://grafana.com/docs/k6/latest/using-k6/scenarios/executors/ramping-arrival-rate/), [JSON](https://grafana.com/docs/k6/latest/results-output/real-time/json/) e [resumo personalizado](https://grafana.com/docs/k6/latest/results-output/end-of-test/custom-summary/).
+- **Data de acesso:** 8 nov. 2026.
+- **Fundamenta:** modelo de chegada com taxas variáveis e VUs limitados, exportação de pontos de métricas com timestamps em JSON por linha e resumo agregado por `handleSummary()`. Documentação consultada também via Context7, com exemplos da versão 2.3.x; execução local validada com k6 2.3.0.
+- **Status:** consultada para implementar o gerador e o relatório técnico; não citada no artigo. Ano não verificado; avaliar o critério temporal antes de uso acadêmico.
+
+### OpenAPI Initiative — OpenAPI Specification 3.1.1
+
+- **Título:** *OpenAPI Specification v3.1.1*.
+- **Autores:** OpenAPI Initiative; editores Darrel Miller, Henry Andrews, Jeremy Whitlock, Lorna Mitchell, Marsh Gardiner, Miguel Quintero, Mike Kistler, Ron Ratovsky e Tony Tam.
+- **Ano e tipo:** 2024, publicada em 24 de outubro; especificação técnica oficial, Linux Foundation.
+- **DOI:** não identificado; identificador persistente de versão: OpenAPI 3.1.1.
+- **URL:** [spec.openapis.org/oas/v3.1.1.html](https://spec.openapis.org/oas/v3.1.1.html).
+- **Data de acesso:** 8 nov. 2026.
+- **Fundamenta:** estrutura da descrição OpenAPI em YAML, operações HTTP, parâmetros, schemas, respostas e componentes reutilizáveis de `code/docs/openapi.yaml`.
+- **Status:** consultada para documentação técnica; não citada no artigo.
