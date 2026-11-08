@@ -18,7 +18,7 @@ Cada composição terá duas instâncias HTTP atrás de Nginx em Docker Compose.
 
 ## Convenções comuns
 
-- Entrada e saída em JSON, com `Content-Type: application/json`.
+- Entrada e saída em JSON, com `Content-Type: application/json`, exceto o corpo livre e opcional da resposta de criação de post.
 - IDs são UUIDs representados como strings. IDs produzidos pelo sistema não dependem do banco utilizado.
 - Datas de nascimento em `AAAA-MM-DD`; instantes em UTC, formato RFC 3339.
 - Data de referência para idade registrada no manifesto da execução, igual nas duas arquiteturas. Idade calculada por calendário, não por divisão de dias por 365; para nascidos em 29/02, considerar 01/03 nos anos não bissextos.
@@ -91,7 +91,7 @@ Regra: ambos devem existir; proibir seguir a si próprio; uma relação por par 
 
 `conteudo`: obrigatório, string, máximo de 500 caracteres. O vínculo com o autor exige `usuario_id`; usuário inexistente retorna 404.
 
-Resposta: `201`, `Location: /posts/<id>` e `{id, usuario_id, conteudo, criado_em}`.
+Resposta: `201` e cabeçalho obrigatório `Location: /posts/<id>`, com o caminho e o UUID do recurso criado. O corpo da resposta é livre e pode estar ausente; o gerador obtém o ID pelo `Location`.
 
 Fan-out na escrita significa materializar uma associação entre o post e o feed de cada seguidor do autor. Essa distribuição é parte do trabalho medido, inclusive quando feita por workers. Não basta persistir apenas o post e declarar toda a operação concluída.
 
@@ -144,7 +144,7 @@ Para relações e compartilhamentos, resposta 201: representação da associaç�
 
 **Verificação inspirada na Rinha:** após 201 de post, aguardar entre 1 e 30 ms e consultar seu `Location` pelo balanceador, esperando 200 com ID, autor e conteúdo corretos. A representação precisa estar disponível para essa leitura, mesmo se ela atingir a outra instância. Não inserir polling ou retries silenciosos para esconder indisponibilidade. O teste de correção deve forçar leitura pela outra instância; round-robin sozinho não prova que cada leitura cruzou instâncias.
 
-A implementação deve garantir que aceitações concorrentes não prometam criações incompatíveis com a unicidade. Não responder 201 e posteriormente descartar uma criação por apelido duplicado ou dados inválidos. O gerador registra os IDs retornados, atores e ações para correlacionar aceitações e persistência na auditoria. A implementação deve garantir leitura entre instâncias e unicidade, sem impor um componente adicional neste contrato. O prazo de processamento é um parâmetro de execução, igual nas duas arquiteturas, e não uma decisão pendente do contrato.
+A implementação deve garantir que aceitações concorrentes não prometam criações incompatíveis com a unicidade. Não responder 201 e posteriormente descartar uma criação por apelido duplicado ou dados inválidos. O gerador registra os IDs retornados (pelo `Location` na criação de posts), atores e ações para correlacionar aceitações e persistência na auditoria. A implementação deve garantir leitura entre instâncias e unicidade, sem impor um componente adicional neste contrato. O prazo de processamento é um parâmetro de execução, igual nas duas arquiteturas, e não uma decisão pendente do contrato.
 
 ## Endpoint especial de auditoria
 

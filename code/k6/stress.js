@@ -58,10 +58,13 @@ function request(method, path, body, route, expected = 200, stage = phase()) {
     success: String(passed), error_code: String(response.error_code || 0) });
   let data = null;
   try { data = response.json(); } catch (_) { /* checks below reject invalid JSON */ }
+  const postLocation = route === 'posts_create' && passed &&
+    /^\/posts\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/i.exec(response.headers.Location || '');
+  const id = route === 'posts_create' ? (postLocation ? postLocation[1] : null) : data && data.id;
   log('request', { phase: stage, route, status: response.status, expected, passed,
-    error_code: response.error_code || null, body, id: data && data.id,
+    error_code: response.error_code || null, body, id,
     action: ['setup', 'audit'].includes(stage) ? null : `${exec.scenario.name}:${exec.scenario.iterationInTest}` });
-  return { response, data, passed };
+  return { response, data, passed, id };
 }
 function verify(condition, name) {
   check(null, { [name]: () => Boolean(condition) });
@@ -182,15 +185,12 @@ export function social(data) {
   } else {
     const payload = { usuario_id: actor, conteudo: `viral s${config.seed} acao${index}` };
     const created = request('POST', '/posts', payload, 'posts_create', 201);
-    if (created.passed && created.data && created.data.id) {
-      const post = created.data.id;
-      const location = created.response.headers.Location;
-      if (verify(location === `/posts/${post}` || location === `${base}/posts/${post}`, 'post: Location válido')) {
-        sleep((1 + Math.floor(choose(index, 3) * 30)) / 1000);
-        const read = request('GET', `/posts/${post}`, null, 'posts_get');
-        verify(read.data && read.data.id === post && read.data.usuario_id === actor &&
-          read.data.conteudo === payload.conteudo, 'post: representação após criação');
-      }
+    if (created.passed && verify(created.id, 'post: Location válido')) {
+      const post = created.id;
+      sleep((1 + Math.floor(choose(index, 3) * 30)) / 1000);
+      const read = request('GET', `/posts/${post}`, null, 'posts_get');
+      verify(read.data && read.data.id === post && read.data.usuario_id === actor &&
+        read.data.conteudo === payload.conteudo, 'post: representação após criação');
       if (config.scenario === 'cascade' || config.scenario === 'reference') {
         const receivers = config.scenario === 'cascade'
           ? data.users.slice(1) : [data.users[(actorIndex + 1) % data.users.length]];
@@ -201,7 +201,7 @@ export function social(data) {
           if (!request('POST', '/compartilhar-post', { usuario_id: user, post_id: post }, 'compartilhar', 201).passed) break;
         }
       }
-    } else if (created.passed) verify(false, 'post: ID retornado');
+    }
   }
   completed.add(1, tags);
 }

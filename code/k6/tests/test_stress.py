@@ -85,7 +85,7 @@ class Fixture(BaseHTTPRequestHandler):
                 self.deliver(body['usuario_id'], state['posts'][body['post_id']], 'compartilhamento', identifier)
             else:
                 return self.reply(404, {})
-            self.reply(201, data, location)
+            self.reply(201, 'corpo livre' if self.path == '/posts' else data, location)
 
     def deliver(self, actor, post, origin, event):
         state = self.server.state
