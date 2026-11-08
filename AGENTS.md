@@ -50,7 +50,7 @@ Ao gerar versões do artigo com `scripts/render-latex.sh`, execute o script norm
 
 ### Código-fonte
 
-Todo o código desenvolvido para o projeto deverá ficar no diretório `code/`.
+Todo o código dos backends deverá ficar em `backends/<projeto>/`, com um diretório para cada projeto backend.
 
 Decisões técnicas já definidas:
 
