@@ -88,3 +88,48 @@ Por decisão do autor, removidos `Input::normalize()` e seus usos nos requests. 
 Removida a dependência direta `symfony/polyfill-intl-normalizer`; ela permanece no lock porque `symfony/string` e `symfony/polyfill-intl-idn` a exigem. A classe `Input` permanece utilizada para JSON, UUIDs, maioridade, cursores e instantes. `ApiRequest` permanece removida, com os oito requests estendendo `FormRequest` diretamente.
 
 Build e recriação das APIs e worker passaram, preservando volumes. Os quatro testes de integração de validação, FormRequests, Unicode/unicidade concorrente e roteamento passaram em 10,005 s. Os três testes PHP, sintaxe de `app/`, sintaxe Python, `composer validate --strict` e `git diff --check` passaram. Não foram repetidas a suíte completa nem a carga de desempenho. Não existem `resources/views` ou `app/Livewire` neste checkout. A divergência em relação à normalização ainda exigida pelo contrato comum está registrada no README; esta alteração ficou restrita ao backend Hyperf.
+
+
+## Integração com `hyperf/amqp`
+
+Instalado `hyperf/amqp` v3.2.5, com `hyperf/pool` v3.2.1 e `hyperf/process` v3.2.0 como dependências transitivas. `BrokerFactory` passa a usar `Hyperf\Amqp\ConnectionFactory`, com uma conexão por processo. Cada adaptador recebe um canal exclusivo; encerrá-lo fecha somente esse canal, inclusive devolvendo mensagens não confirmadas. O transporte Swoole, heartbeat e substituição de conexões desconectadas ficam no componente oficial. O worker agora inicializa corrotinas e sinaliza `WORKER_EXIT` ao terminar, encerrando as corrotinas de heartbeat do componente.
+
+Preservados o adaptador de publicação com `mandatory`, confirmação positiva explícita, mensagens persistentes, coleta por `basic_get`, lotes, ACK após commit e marcação da outbox após confirmação. O produtor padrão instalado não envia com `mandatory`; o consumidor padrão não corresponde à transação única por lote da aplicação. Não foram migrados para as classes padrão `Producer`/`Consumer`. Nenhuma consulta Neo4j ou contrato público foi alterado.
+
+Build, recriação das aplicações preservando volumes, sintaxe PHP/Python, `composer validate --strict`, requisitos de plataforma, auditoria de dependências e `git diff --check` passaram. O Compose manteve 1,50 CPU/3000 MiB, sem swap adicional, e os seis serviços ficaram saudáveis. Não existem `resources/views` ou `app/Livewire` neste backend.
+
+Os três testes PHP existentes passaram. O novo `tests/amqp.php`, contra RabbitMQ real, passou verificando reutilização da conexão, isolamento de canais, fechamento de um canal sem interromper outro, publicação confirmada, rejeição de mensagem sem rota e publicação bem-sucedida após essa rejeição.
+
+A suíte Python executou dez testes em 181,410 s: nove passaram, incluindo concorrência de publicação, cascata/replay após commit sem ACK, recuperação da outbox com queda do RabbitMQ e preservação de mensagem pendente após recriar o broker. `test_validation` falhou porque corpo JSON vazio retornou 422, enquanto o teste espera 400; as verificações seguintes desse método não foram executadas. O comportamento foi reproduzido com uma imagem construída de `git archive HEAD backends/hyperf-async`, anterior à integração e sem a nova dependência: POST vazio em `/usuarios` também retornou 422. Essa divergência preexistente foi preservada e não torna a suíte completa aprovada. O container temporário de referência foi removido após a consulta.
+
+Na validação funcional acima não foi executada carga de desempenho; seus tempos são duração dos testes. A execução de stress posterior está registrada abaixo.
+
+
+## Stress com AMQP comparado ao último stress completo
+
+Executado em 08/11/2026 no projeto isolado `tcc-hyperf-stress-amqp-20261108`, com volumes novos e `/metricas` inicialmente zerado. Reutilizados exatamente a configuração e o SHA-256 do gerador do stress completo `stress-refactor-20261108`: cascata, seed 42, 12 usuários, 205 s de chegadas, pico programado de 740 ações/s, timeout de 2000 ms e recuperação de 10 s. Limites efetivos verificados por inspeção: 1,50 CPU/3000 MiB, sem swap adicional. A imagem da aplicação foi alterada para a integração AMQP; imagens dos demais componentes e distribuição de recursos permaneceram iguais. O ambiente de desenvolvimento ficou parado durante a carga e foi restaurado, preservando seus volumes. Outros serviços do host permaneceram ativos. Uma execução por versão, sem isolamento exclusivo do host.
+
+| Indicador | Último completo | AMQP |
+| --- | ---: | ---: |
+| Requisições de negócio | 70.530 | 70.585 |
+| Respostas inesperadas | 66.157 (93,80%) | 66.342 (93,99%) |
+| POST de post com 201 | 755 | 739 |
+| Feed com 200 | 1.573 | 1.592 |
+| Busca válida de posts com 200 | 283 | 215 |
+| Busca válida de usuários com 200 | 277 | 198 |
+| GET após criação com 200 | 0/755 | 0/739 |
+| Compartilhamentos com 201 | 8 | 0 |
+| Ações não iniciadas | 530 | 374 |
+| Ações interrompidas | 2 | 61 |
+| CPU média RabbitMQ, em núcleos | 0,118 | 0,068 |
+| Pico de memória RabbitMQ, MiB | 93,31 | 83,40 |
+| CPU média Neo4j, em núcleos | 0,510 | 0,513 |
+| Pico de memória Neo4j, MiB | 643,3 | 626,2 |
+
+As respostas esperadas incluem 422 para busca inválida; isso não é falha. Os p95 das rotas principais permaneceram aproximadamente em 2001 ms, incluindo falhas e timeouts. Nas 739 consultas após criação houve 498 respostas 404, 150 falhas de transporte e 91 respostas 503. Ações não iniciadas: 332 sociais, 42 buscas válidas, zero buscas inválidas; as 61 interrompidas são sociais. As duas execuções terminaram com código 99 e relatório `invalid`, pois houve ações não iniciadas. Não há evidência de melhora global no atendimento HTTP nesta repetição. A redução observada de consumo do RabbitMQ não estabelece causalidade ou ganho estatístico da biblioteca.
+
+Coletadas 410 amostras por componente durante as chegadas: Neo4j permaneceu acima de 90% da quota em todas. APIs atingiram 82,94/83,45 MiB; worker, 33,57 MiB. Os logs registraram 45.709 ocorrências de `exceed max number of coroutine 256`. **(inferred)** A saturação do Neo4j e o esgotamento de corrotinas continuam associados à degradação; a migração de transporte não resolveu esse comportamento. Os seis containers terminaram saudáveis, sem OOM nem reinícios.
+
+Na observação `TF_observed`, sem preservação atômica do corte, o runner encontrou 340 posts/24 entradas de feed, contra 784/51 anteriormente. Esses números são observacionais e não constituem pontuação auditada. Após o runner, a primeira coleta externa encontrou 632 posts/32 entradas; a última, 3.823 posts/110 entradas, com 4.957 mensagens de posts e 3.812 de distribuição prontas. Esta última coleta começou 43,21 s após a primeira: o comando de consulta ao RabbitMQ acrescenta tempo às pausas de 10 s, portanto não equivale aos cerca de 31 s da recuperação anterior. Não comparar esses totais tardios como se tivessem o mesmo corte. As filas ainda tinham pendências quando o projeto foi encerrado; os volumes foram preservados.
+
+Artefatos locais ignorados pelo Git em `tests/results/stress-amqp-20261108/`: `run/report.json`, manifesto e dados brutos, inventário, métricas iniciais, recursos externos, recuperação com timestamps, estado final, logs, `analysis.json`, `desempenho.png` e `comparacao.png`. O runner levou 3 min 48,76 s, máximo RSS de 258.832 KiB e nenhum swap. Não houve ajuste de código ou de carga para melhorar o resultado. Permanecem pendentes repetições, preservação consistente de TF e auditoria completa de integridade; não é uma comparação oficial do TCC.

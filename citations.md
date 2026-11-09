@@ -1,5 +1,16 @@
 ## Fontes consultadas e citadas
 
+### Hyperf — Async Queue
+
+- **Título:** *Async Queue*, documentação da branch 3.2.
+- **Autores institucionais:** Hyperf e seus colaboradores.
+- **Ano e tipo:** documentação oficial contínua; ano de publicação não identificado.
+- **DOI/identificador:** branch 3.2 do repositório oficial; DOI não identificado.
+- **URL:** https://github.com/hyperf/hyperf/blob/3.2/docs/en/async-queue.md .
+- **Data de acesso:** 8 nov. 2026.
+- **Fundamenta:** abstração de jobs com `handle()`, `DriverFactory` e `DriverInterface`; a documentação informa suporte apenas ao driver Redis e distingue esse componente das integrações com brokers como RabbitMQ.
+- **Status:** consultada para esclarecimento técnico; não citada no artigo. Ano não verificado; avaliar critério temporal antes de uso acadêmico.
+
 ### Karabey Aksakalli et al. (2021)
 
 - **Título:** *Deployment and Communication Patterns in Microservice Architectures: A Systematic Literature Review*.
@@ -318,6 +329,7 @@
 - **URLs:** https://github.com/hyperf/hyperf/blob/master/docs/en/upgrade/3.1.md e https://github.com/hyperf/hyperf/blob/3.2/src/stringable/src/Str.php .
 - **Data de acesso:** 8 nov. 2026.
 - **Fundamenta:** existência de helpers oficiais, separação em componentes e métodos `Str::isUuid()` e `Str::uuid()`. Documentação consultada via Context7 e métodos conferidos na dependência instalada; geração de UUID exige `ramsey/uuid`, ausente no lock atual.
+- **Verificação na implementação em 8 nov. 2026:** instalado `hyperf/amqp` v3.2.5 pelo Composer e consultados os fontes distribuídos de `ConnectionFactory`, `AMQPConnection`, `Params`, `ConfigProvider`, `IO/IOFactory`, `IO/SwooleIO`, `Listener/MainWorkerStartListener` e a configuração publicada. A integração usa a fábrica oficial com canais exclusivos; o adaptador local preserva publicação obrigatória e confirmações.
 - **Status:** consultada para revisão técnica; não citada no artigo. Ano não verificado; avaliar critério temporal antes de uso acadêmico.
 
 ### Hyperf — Request e parsing JSON
@@ -329,15 +341,19 @@
 - **URLs:** https://github.com/hyperf/hyperf/blob/master/docs/en/request.md e https://github.com/hyperf/hyperf/blob/3.2/src/http-message/src/Server/Request/JsonParser.php .
 - **Data de acesso:** 8 nov. 2026.
 - **Fundamenta:** leitura nativa de dados JSON; na dependência instalada, `JsonParser` lança `BadRequestHttpException` para JSON malformado por padrão. Conferência da duplicação de parsing em `Input::body`, removida em favor de `getParsedBody()`; preservadas as exigências de mídia JSON e corpo como objeto na aplicação.
+- **Verificação na implementação em 8 nov. 2026:** instalado `hyperf/amqp` v3.2.5 pelo Composer e consultados os fontes distribuídos de `ConnectionFactory`, `AMQPConnection`, `Params`, `ConfigProvider`, `IO/IOFactory`, `IO/SwooleIO`, `Listener/MainWorkerStartListener` e a configuração publicada. A integração usa a fábrica oficial com canais exclusivos; o adaptador local preserva publicação obrigatória e confirmações.
 - **Status:** consultada para revisão técnica; não citada no artigo. Ano não verificado; avaliar critério temporal antes de uso acadêmico.
 
 ### Hyperf — AMQP
 
 - **Título:** *AMQP*, documentação da branch 3.2.
+- **Código oficial complementar consultado:** `src/amqp/src/{Producer,Consumer,ConnectionFactory,AMQPConnection,Builder,ConfigProvider}.php`, `src/amqp/src/Message/ConsumerMessage.php`, `src/amqp/src/Listener/BeforeMainServerStartListener.php`, `src/amqp/publish/amqp.php`, `src/amqp/composer.json` e `src/process/src/AbstractProcess.php`, na branch 3.2 de https://github.com/hyperf/hyperf .
 - **Autores institucionais:** Hyperf e seus colaboradores.
 - **Ano e tipo:** documentação oficial contínua; ano de publicação não identificado.
 - **DOI/identificador:** branch 3.2 do repositório oficial; DOI não identificado.
 - **URL:** https://github.com/hyperf/hyperf/blob/3.2/docs/en/amqp.md .
 - **Data de acesso:** 8 nov. 2026.
 - **Fundamenta:** componente oficial com produtores, consumidores, pool de conexões, QoS, resultados de confirmação e criação e recuperação de processos consumidores. Consultado para avaliar sobreposição com o transporte RabbitMQ e o ciclo do worker locais; a documentação não estabelece substituição direta da coleta em lotes nem da outbox do projeto.
+- **Reconsulta em 8 nov. 2026:** análise para planejar a refatoração, sem implementação. O produtor aceita confirmação, mas chama `basic_publish` sem `mandatory`; o consumidor processa uma mensagem por callback e converte exceções não tratadas em `Result::DROP`. A fábrica gerencia conexões e canais com suporte a corrotinas. Esses comportamentos exigem preservar explicitamente detecção de publicação sem rota, ACK após transação em lote, recuperação de falhas e inicialização das filas antes de aceitar posts com o worker parado. O componente continua dependendo de `php-amqplib/php-amqplib`. Código da branch consultado, sem resolução ou execução de uma versão instalada de `hyperf/amqp`.
+- **Verificação na implementação em 8 nov. 2026:** instalado `hyperf/amqp` v3.2.5 pelo Composer e consultados os fontes distribuídos de `ConnectionFactory`, `AMQPConnection`, `Params`, `ConfigProvider`, `IO/IOFactory`, `IO/SwooleIO`, `Listener/MainWorkerStartListener` e a configuração publicada. A integração usa a fábrica oficial com canais exclusivos; o adaptador local preserva publicação obrigatória e confirmações.
 - **Status:** consultada para revisão técnica; não citada no artigo. Ano não verificado; avaliar critério temporal antes de uso acadêmico.

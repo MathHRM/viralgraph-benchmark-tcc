@@ -8,6 +8,7 @@
     "ext-curl": "*",
     "ext-mbstring": "*",
     "ext-swoole": ">=6.0",
+    "hyperf/amqp": "~3.2.0",
     "hyperf/config": "~3.2.0",
     "hyperf/di": "~3.2.0",
     "hyperf/engine": "^2.12",

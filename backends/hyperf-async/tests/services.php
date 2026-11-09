@@ -36,6 +36,7 @@ final class StubBroker extends Broker {
     public function close(): void { $this->closed = true; }
 }
 final class StubFactory extends BrokerFactory {
+    public function __construct() {}
     public array $opened = [];
     public bool $fail = false;
     public function open(): Broker { return $this->opened[] = new StubBroker($this->fail); }
@@ -68,4 +69,4 @@ foreach ([false, false, true] as $fail) {
     check(end($factory->opened)->closed);
 }
 check(count($factory->opened) === 3 && $factory->opened[0] !== $factory->opened[1]);
-echo "Regras de negócio, precedência e conexão por operação: OK\n";
+echo "Regras de negócio, precedência e canal por operação: OK\n";

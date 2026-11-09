@@ -2,47 +2,48 @@
 declare(strict_types=1);
 namespace App\Infrastructure\RabbitMQ;
 
-use PhpAmqpLib\Connection\AMQPStreamConnection;
+use Hyperf\Amqp\AMQPConnection;
 use PhpAmqpLib\Message\AMQPMessage;
 
 class Broker
 {
-    public readonly AMQPStreamConnection $connection;
     public readonly \PhpAmqpLib\Channel\AMQPChannel $channel;
     private bool $rejected = false;
+    private bool $confirmed = false;
 
-    public function __construct()
+    public function __construct(AMQPConnection $connection)
     {
-        $this->connection = new AMQPStreamConnection(
-            getenv('RABBITMQ_HOST') ?: 'rabbitmq', 5672,
-            getenv('RABBITMQ_USER') ?: 'benchmark',
-            getenv('RABBITMQ_PASSWORD') ?: 'benchmark-local',
-            '/', false, 'AMQPLAIN', null, 'en_US', 3, 3, null, false, 0
-        );
-        $this->channel = $this->connection->channel();
-        foreach (['posts', 'distribution'] as $queue) {
-            $this->channel->queue_declare($queue, false, true, false, false);
+        // O canal é exclusivo da operação; a conexão pertence ao Hyperf.
+        $this->channel = $connection->getConfirmChannel();
+        try {
+            foreach (['posts', 'distribution'] as $queue) {
+                $this->channel->queue_declare($queue, false, true, false, false);
+            }
+            $this->channel->set_ack_handler(function () { $this->confirmed = true; });
+            $this->channel->set_nack_handler(function () { $this->rejected = true; });
+            $this->channel->set_return_listener(function () { $this->rejected = true; });
+        } catch (\Throwable $error) {
+            try { $this->channel->close(); } catch (\Throwable) {}
+            throw $error;
         }
-        $this->channel->confirm_select();
-        $this->channel->set_nack_handler(function () { $this->rejected = true; });
-        $this->channel->set_return_listener(function () { $this->rejected = true; });
     }
 
     public function publish(string $queue, array $payload): void
     {
         $this->rejected = false;
+        $this->confirmed = false;
         $this->channel->basic_publish(new AMQPMessage(json_encode($payload, JSON_THROW_ON_ERROR), [
             'delivery_mode' => AMQPMessage::DELIVERY_MODE_PERSISTENT,
             'content_type' => 'application/json',
         ]), '', $queue, true);
         $this->channel->wait_for_pending_acks_returns(3);
-        if ($this->rejected) {
+        if ($this->rejected || !$this->confirmed) {
             throw new \RuntimeException('Publicação rejeitada pelo broker.');
         }
     }
 
     public function close(): void
     {
-        $this->connection->close();
+        $this->channel->close();
     }
 }
