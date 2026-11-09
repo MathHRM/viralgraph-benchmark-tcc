@@ -6,7 +6,7 @@ Implementação do perfil de chegadas da [Rinha 2023 Q3](https://github.com/zanf
 
 Requisitos: k6 (validado com 2.3.0), Python 3.11 ou superior, Git e uma API que implemente o contrato. Sem bibliotecas Python adicionais. O backend e seu balanceador precisam estar disponíveis; este diretório não os provisiona.
 
-**A execução grava dados. Use uma base experimental vazia.** O script verifica `/metricas` antes da preparação, cria os usuários e as relações e espera as contagens da base estabilizarem. Não apaga nem restaura bancos. Nunca apontar para uma base de uso real.
+**A execução grava dados. Use uma base experimental vazia.** Sem `--clean`, o script verifica `/metricas` antes da preparação e exige a base vazia; ele não apaga nem restaura bancos. Nunca apontar para uma base de uso real.
 
 Na raiz do repositório:
 
@@ -15,6 +15,10 @@ python3 code/k6/run.py \
   --base-url http://127.0.0.1:9999 \
   --architecture sync
 ```
+
+Opcionalmente, acrescente `--clean` para o runner recriar os serviços locais da arquitetura, esperar `/metricas` responder HTTP 200 e então iniciar a preparação e a carga. A limpeza é destrutiva para os dados persistentes locais daquela composição: no Hyperf, remove os volumes Compose do Neo4j e RabbitMQ; no Laravel, executará `artisan migrate:fresh --force`. Não use com dados que precise preservar. Se reset, subida ou disponibilidade falhar, o runner grava o erro no manifesto/relatório e não inicia o k6. O manifesto registra se a opção foi usada, os comandos, o estado e os horários.
+
+O reset `async` opera em `backends/hyperf-async/compose.yaml`, no projeto Compose definido por esse arquivo. O reset `sync` pressupõe **(assumed)** uma composição futura em `backends/laravel-sync/compose.yaml`, com o serviço da aplicação chamado `app`; esse backend ainda não existe neste checkout, portanto `--clean --architecture sync` falhará sem iniciar a carga até a composição ser criada. Sem `--clean`, ambas as arquiteturas continuam exigindo `/metricas` zerado durante a preparação.
 
 Para a composição assíncrona, usar `--architecture async`, a URL correspondente e a mesma configuração. O parâmetro identifica a execução; não detecta nem valida a arquitetura. Cada chamada executa uma repetição. Restaurar a base e alternar a ordem das composições entre repetições, conforme o protocolo.
 
