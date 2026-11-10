@@ -2,11 +2,13 @@
 import importlib.util
 import json
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+import os
 from pathlib import Path
 import subprocess
 import tempfile
 import threading
 import unittest
+from unittest import mock
 import uuid
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -117,6 +119,55 @@ class ReportTests(unittest.TestCase):
                 with self.assertRaises(ValueError):
                     runner.load_config(path)
 
+    def test_clean_reset_runs_commands_then_waits_for_api(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            backend = Path(temporary)
+            (backend / 'compose.yaml').touch()
+            calls = []
+            commands = [(['docker', 'compose', 'down', '--volumes'], backend),
+                        (['docker', 'compose', 'up', '-d', '--wait'], backend)]
+            def run(command, **kwargs):
+                calls.append(command)
+                return subprocess.CompletedProcess(command, 0)
+            with mock.patch.object(runner, 'reset_commands', return_value=commands):
+                with (backend / 'reset.log').open('w') as log:
+                    runner.clean_architecture('async', 'http://localhost:9999', log, run,
+                                              lambda url: calls.append(url))
+            self.assertEqual(calls, [commands[0][0], commands[1][0], 'http://localhost:9999'])
+
+    def test_clean_reset_stops_on_command_failure_without_waiting(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            backend = Path(temporary)
+            (backend / 'compose.yaml').touch()
+            commands = [(['docker', 'compose', 'down', '--volumes'], backend)]
+            with mock.patch.object(runner, 'reset_commands', return_value=commands):
+                with (backend / 'reset.log').open('w') as log:
+                    with self.assertRaisesRegex(RuntimeError, 'Comando de reset falhou'):
+                        runner.clean_architecture('async', 'http://localhost:9999', log,
+                            lambda command, **kwargs: subprocess.CompletedProcess(command, 1),
+                            lambda url: self.fail('API não deve ser verificada'))
+
+    def test_clean_reset_failure_writes_report_without_starting_k6(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            directory = Path(temporary)
+            fake_bin = directory / 'bin'
+            fake_bin.mkdir()
+            marker = directory / 'k6-run-started'
+            fake_k6 = fake_bin / 'k6'
+            fake_k6.write_text(f'#!/bin/sh\nif [ "$1" = version ]; then echo k6-test; else touch "{marker}"; fi\n')
+            fake_k6.chmod(0o755)
+            env = {**os.environ, 'PATH': f'{fake_bin}:{os.environ["PATH"]}'}
+            result = subprocess.run(['python3', str(ROOT / 'run.py'), '--base-url',
+                'http://127.0.0.1:9999', '--architecture', 'sync', '--clean',
+                '--output', str(directory / 'results')], capture_output=True, text=True,
+                env=env, timeout=10)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertFalse(marker.exists())
+            report = json.loads((directory / 'results' / 'report.json').read_text())
+            self.assertEqual(report['manifest']['clean']['status'], 'failed')
+            self.assertIn('ainda não existe', report['manifest']['clean']['error'])
+            self.assertIn('não foi iniciado', report['measurement']['invalid_reasons'][-1])
+
     def execute(self, scenario, broken=False):
         server = ThreadingHTTPServer(('127.0.0.1', 0), Fixture)
         server.state = {'users': {}, 'edges': set(), 'posts': {}, 'shares': set(), 'feeds': {}}
@@ -141,6 +192,8 @@ class ReportTests(unittest.TestCase):
                     log = directory / 'results' / 'output.log'
                     self.fail(result.stdout + result.stderr + (log.read_text() if log.exists() else ''))
                 report = json.loads(report_path.read_text())
+                self.assertEqual(report['manifest']['clean']['requested'], False)
+                self.assertEqual(report['manifest']['clean']['status'], 'not_requested')
                 if not broken and result.returncode:
                     self.fail((directory / 'results' / 'output.log').read_text())
                 self.assertEqual(report['measurement']['status'], 'completed')

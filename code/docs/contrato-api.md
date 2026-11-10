@@ -2,13 +2,13 @@
 
 ## Estado da especificação
 
-Contrato aprovado pelo autor, inspirado no [regulamento da Rinha de Backend 2023 Q3](https://github.com/zanfranceschi/rinha-de-backend-2023-q3/blob/main/INSTRUCOES.md). Não representa uma API implementada nem resultados experimentais. O protocolo de carga está em [teste-estresse.md](teste-estresse.md).
+Contrato aprovado pelo autor, inspirado no [regulamento da Rinha de Backend 2023 Q3](https://github.com/zanfranceschi/rinha-de-backend-2023-q3/blob/main/INSTRUCOES.md). A composição assíncrona está em [backends/hyperf-async](../../backends/hyperf-async/README.md); este contrato não representa resultados experimentais. O protocolo de carga está em [teste-estresse.md](teste-estresse.md).
 
 A versão em [OpenAPI 3.1.1](openapi.yaml) descreve o contrato externo comum às duas composições, incluindo schemas, validações, respostas, paginação e regras de negócio. As suposições de nomenclatura estão marcadas no arquivo; as regras de domínio descritas em texto também precisam ser verificadas pela implementação e pela auditoria.
 
 **Decisões aprovadas:** endpoints abaixo; limites de nome, apelido e conteúdo; idade mínima; seguidores direcionados; um feed por usuário; fan-out na escrita de posts; unicidade de compartilhamentos por usuário/post; respostas 201 e 422; uma entrada por usuário/post no feed; compartilhamento válido exige presença no feed verificada no corte final; sem estados intermediários nos recursos; autor não recebe nem compartilha o próprio post; consulta após criação de post; apelidos distinguem maiúsculas e acentos; compartilhamento distribui aos seguidores; duas instâncias com Nginx e recursos limitados.
 
-Os complementos de identificação, validação, respostas, consultas, contagem e auditoria foram aprovados pelo autor. Este documento especifica comportamento; não representa uma implementação concluída nem modifica o artigo acadêmico.
+Os complementos de identificação, validação, respostas, consultas, contagem e auditoria foram aprovados pelo autor. Este documento especifica comportamento; não modifica o artigo acadêmico.
 
 ## Ambiente e objetivo
 
@@ -22,7 +22,7 @@ Cada composição terá duas instâncias HTTP atrás de Nginx em Docker Compose.
 - IDs são UUIDs representados como strings. IDs produzidos pelo sistema não dependem do banco utilizado.
 - Datas de nascimento em `AAAA-MM-DD`; instantes em UTC, formato RFC 3339.
 - Data de referência para idade registrada no manifesto da execução, igual nas duas arquiteturas. Idade calculada por calendário, não por divisão de dias por 365; para nascidos em 29/02, considerar 01/03 nos anos não bissextos.
-- Campos obrigatórios rejeitam ausência, `null`, tipos incorretos e strings vazias ou compostas apenas por espaços. Campos desconhecidos retornam 422. Não converter números em strings.
+- Campos obrigatórios rejeitam ausência, `null`, tipos incorretos e strings vazias ou compostas apenas por espaços. Campos desconhecidos são ignorados e não integram os dados validados. Não converter números em strings.
 - Limites de strings medidos em pontos de código Unicode. Sem corte silencioso. Conteúdo de posts preservado; remover espaços externos de nome/apelido antes de validar e persistir; normalizar texto em Unicode NFC, preservando maiúsculas e acentos.
 - Sem edição, exclusão, deixar de seguir ou desfazer compartilhamento nesta versão.
 - Identificação do ator por `usuario_id`/`seguidor_id` no corpo. Não haverá autenticação no benchmark.
@@ -115,7 +115,7 @@ A validade é verificada no corte final da execução: o compartilhamento precis
 
 Compartilhamentos sem presença válida no feed no corte não entram na contagem válida. Entregas e desdobramentos cuja única origem seja esse compartilhamento inválido também não entram; uma entrega com outro caminho válido continua contando uma única vez. Essa verificação não exige criar estados intermediários nos recursos.
 
-**Definido pelo autor:** no máximo uma entrada por `(destinatario_id, post_id)` no feed, mesmo quando o destinatário recebe por múltiplos caminhos. Novo caminho não cria uma segunda entrada. Procedência: a primeira entrega e sua ordenação devem ser determinísticas; desempate pela ordem lógica do evento no conjunto de carga, não pelo relógio mais rápido da arquitetura.
+**Definido pelo autor:** no máximo uma entrada por `(destinatario_id, post_id)` no feed, mesmo quando o destinatário recebe por múltiplos caminhos. Novo caminho não cria uma segunda entrada. Procedência e posição são fixadas pela primeira entrega gravada no banco. Uma sequência persistida ordena as entregas; caminhos posteriores preservam origem e posição e ficam registrados apenas como evidência para auditoria.
 
 ## Consultas, buscas e feed
 
@@ -123,7 +123,7 @@ Compartilhamentos sem presença válida no feed no corte não entram na contagem
 - Busca de usuários procura substring em `nome` ou `apelido`; busca de posts procura substring em `conteudo`. As buscas distinguem maiúsculas e acentos, usando texto normalizado em NFC nas duas arquiteturas.
 - Termo ausente, vazio ou só com espaços retorna 422; nenhuma correspondência retorna 200 com lista vazia. Limite de 100 caracteres para termo de usuários e 500 para posts.
 - Buscas e feed usam `{data: [...], proximo_cursor: null|string}`, com até 50 itens por página. Cursor inválido retorna 422. O cursor mantém a posição pela chave de ordenação; novas entradas anteriores ao cursor aparecem ao reiniciar a consulta.
-- Ordenação: buscas por ID crescente; feed por sequência lógica do evento de origem decrescente, com ID como desempate. Não ordenar aleatoriamente ou depender de ordem implícita do banco.
+- Ordenação: buscas por ID crescente; feed por sequência persistida da primeira entrega decrescente, com ID como desempate. Não ordenar aleatoriamente ou depender de ordem implícita do banco.
 - Cada item do feed contém `post`, `origem` (`publicacao` ou `compartilhamento`), `autor_evento_id` e `evento_id`. O cursor codifica a sequência e o ID do último item retornado, sem depender de offsets.
 - Feed de usuário existente sem entradas retorna 200 com lista vazia; usuário inexistente retorna 404.
 - Consultar feed não deve criar associações de distribuição: o experimento solicitado é de fan-out na escrita.
@@ -184,4 +184,10 @@ Relatar deltas contra a base preparada. Número de registros físicos, respostas
 
 ## Implementação e configuração
 
-Não há aprovações pendentes deste contrato. Parâmetros de carga e prazo são configuráveis e registrados por execução. A implementação e sua validação permanecem trabalho futuro.
+Não há aprovações pendentes deste contrato. Parâmetros de carga e prazo são configuráveis e registrados por execução. A implementação assíncrona e suas verificações locais estão documentadas em [backends/hyperf-async](../../backends/hyperf-async/README.md); a comparação experimental e a auditoria do corte final permanecem pendentes.
+
+## Aceitação assíncrona de posts
+
+Na composição Hyperf, apenas `POST /posts` responde `201`, `{ "id": "<uuid>" }` e `Location` após confirmação da publicação persistente pelo RabbitMQ, antes da persistência do recurso no Neo4j. Durante esse intervalo, `GET /posts/:id` retorna `404`. Trata-se da decisão explícita deste benchmark, sem substituir 201 por 202. O autor é validado antes da publicação; falha operacional retorna 5xx. Usuários, relações e compartilhamentos são validados e persistidos antes do 201.
+
+O critério do k6 permanece inalterado: uma única leitura após 1–30 ms deve retornar 200. A aceitação assíncrona pode falhar nesse critério. Compartilhamentos exigem entrada já materializada no feed; a auditoria do corte final continua obrigatória e pendente de integração.

@@ -44,7 +44,8 @@ A entrega 4 corresponde, portanto, a **conclusões e trabalhos futuros**. A exec
 ```text
 .
 ├── artigo/                              # Documento acadêmico em LaTeX
-├── code/                                # Código-fonte da aplicação backend
+├── backends/hyperf-async/                # Hyperf/Swoole, RabbitMQ e Neo4j
+├── code/                                # Contrato, protocolo e gerador k6
 ├── modelo-de-artigo-icei-puc-minas/    # Template institucional do artigo
 ├── citations.md                         # Registro das fontes consultadas e citadas
 ├── Dockerfile                           # Imagem usada para compilar o LaTeX
@@ -59,7 +60,7 @@ A entrega 4 corresponde, portanto, a **conclusões e trabalhos futuros**. A exec
 - Interface: não haverá frontend
 - Tipo de aplicação: exclusivamente backend
 
-O código da aplicação deverá ser mantido em `code/`. A definição detalhada da infraestrutura e de eventuais dependências ainda faz parte do desenvolvimento do projeto.
+Os backends ficam em `backends/<projeto>/`. Contratos e gerador de carga ficam em `code/`.
 
 ## Requisitos
 
@@ -108,7 +109,7 @@ DOCUMENT_NAME=tcc ./scripts/render-latex.sh
 
 ## Desenvolvimento da aplicação
 
-O diretório `code/` está reservado para a aplicação Hyperf. Os comandos de instalação, execução e teste serão documentados aqui quando a implementação do backend for adicionada.
+A composição assíncrona está em [`backends/hyperf-async/`](backends/hyperf-async/README.md), com instruções de execução, limites de recursos, testes e recuperação.
 
 ## Referências
 

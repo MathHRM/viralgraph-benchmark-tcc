@@ -1,5 +1,16 @@
 ## Fontes consultadas e citadas
 
+### Hyperf — Async Queue
+
+- **Título:** *Async Queue*, documentação da branch 3.2.
+- **Autores institucionais:** Hyperf e seus colaboradores.
+- **Ano e tipo:** documentação oficial contínua; ano de publicação não identificado.
+- **DOI/identificador:** branch 3.2 do repositório oficial; DOI não identificado.
+- **URL:** https://github.com/hyperf/hyperf/blob/3.2/docs/en/async-queue.md .
+- **Data de acesso:** 8 nov. 2026.
+- **Fundamenta:** abstração de jobs com `handle()`, `DriverFactory` e `DriverInterface`; a documentação informa suporte apenas ao driver Redis e distingue esse componente das integrações com brokers como RabbitMQ.
+- **Status:** consultada para esclarecimento técnico; não citada no artigo. Ano não verificado; avaliar critério temporal antes de uso acadêmico.
+
 ### Karabey Aksakalli et al. (2021)
 
 - **Título:** *Deployment and Communication Patterns in Microservice Architectures: A Systematic Literature Review*.
@@ -37,7 +48,7 @@
 - **Ano e tipo:** 2026; documentação oficial.
 - **URL:** [rabbitmq.com/docs/confirms](https://www.rabbitmq.com/docs/confirms).
 - **Data de acesso:** 21 set. 2026.
-- **Fundamenta:** distinção entre confirmações de entrega pelo consumidor e confirmações ao publicador.
+- **Fundamenta:** distinção entre confirmações de entrega pelo consumidor e confirmações ao publicador. Reconsultada em 8 nov. 2026 para implementar mensagens persistentes, filas duráveis, publisher confirms e ACK após commit no backend assíncrono.
 - **Status:** citada no artigo.
 
 ### Neo4j (2026)
@@ -253,3 +264,96 @@
 - **Data de acesso:** 8 nov. 2026.
 - **Fundamenta:** estrutura da descrição OpenAPI em YAML, operações HTTP, parâmetros, schemas, respostas e componentes reutilizáveis de `code/docs/openapi.yaml`.
 - **Status:** consultada para documentação técnica; não citada no artigo.
+
+### Hyperf — inicialização e servidor HTTP
+
+- **Título:** *Hyperf documentation* e *hyperf-skeleton*, branch 3.1 (convenções de bootstrap); *Dependency Injection*, branch 3.2, e skeleton oficial em `master` (organização e injeção de dependências).
+- **Autores institucionais:** Hyperf e seus colaboradores.
+- **Ano e tipo:** documentação e código oficiais contínuos; ano de publicação não identificado.
+- **DOI/identificador:** não identificado; repositórios oficiais Hyperf.
+- **URLs:** https://github.com/hyperf/hyperf e https://github.com/hyperf/hyperf-skeleton/tree/3.1 ; https://github.com/hyperf/hyperf-skeleton ; https://github.com/hyperf/hyperf/blob/3.2/docs/en/di.md .
+- **Data de acesso:** 8 nov. 2026.
+- **Fundamenta:** inicialização do contêiner, registro de rotas, callbacks e configuração do servidor HTTP; a implementação usa dependências 3.2 travadas no Composer por compatibilidade com PHP 8.4. Reconsultada em 8 nov. 2026 para planejar a refatoração: organização do skeleton, controllers criados pelo contêiner, injeção por construtor, bindings e cuidados com objetos de longa duração e estado por corrotina. A separação proposta entre serviços, repositórios e worker é uma decisão local, não uma estrutura obrigatória do framework.
+- **Status:** consultada para implementação técnica; não citada no artigo. Ano não verificado; avaliar critério temporal antes de uso acadêmico.
+
+### Docker — Services
+
+- **Título:** *Services* (Compose file reference).
+- **Autor institucional:** Docker.
+- **Ano e tipo:** documentação oficial contínua; ano de publicação não identificado.
+- **DOI:** não identificado.
+- **URL:** https://docs.docker.com/reference/compose-file/services/ .
+- **Data de acesso:** 8 nov. 2026.
+- **Fundamenta:** limites `cpus`, `mem_limit`, `memswap_limit`, healthchecks e condições de inicialização do Compose. Limites efetivos verificados com Docker, sem presumir aplicação apenas pelo YAML.
+- **Status:** consultada para implementação técnica; não citada no artigo. Ano não verificado; avaliar critério temporal antes de uso acadêmico.
+
+### Neo4j — HTTP API: Transactions
+
+- **Título:** *Transactions* (HTTP API).
+- **Autor institucional:** Neo4j.
+- **Ano e tipo:** documentação oficial contínua; ano de publicação não identificado.
+- **DOI:** não identificado.
+- **URL:** https://neo4j.com/docs/http-api/current/transactions/ .
+- **Data de acesso:** 8 nov. 2026.
+- **Fundamenta:** endpoint transacional HTTP, parâmetros, confirmação atômica e erros retornados no corpo; usado para persistência em lotes e outbox na mesma transação.
+- **Status:** consultada para implementação técnica; não citada no artigo. Ano não verificado; avaliar critério temporal antes de uso acadêmico.
+
+### RabbitMQ — identidade do nó e diretório persistente
+
+- **Títulos:** *Clustering Guide*, *Configuration* e *File and Directory Locations*.
+- **Autor institucional:** RabbitMQ.
+- **Ano e tipo:** documentação oficial contínua; ano de publicação não identificado.
+- **DOI:** não identificado.
+- **URLs:** https://www.rabbitmq.com/docs/clustering , https://www.rabbitmq.com/docs/configure e https://www.rabbitmq.com/docs/relocate .
+- **Data de acesso:** 8 nov. 2026.
+- **Fundamenta:** nome padrão do nó derivado do hostname e diretório de dados derivado desse nome; hostname fixo no Compose para preservar acesso às filas ao recriar o container.
+- **Status:** consultada para recuperação operacional; não citada no artigo. Ano não verificado; avaliar critério temporal antes de uso acadêmico.
+
+### Hyperf — Validation
+
+- **Título:** *Validation* e código do componente `hyperf/validation` v3.2.5.
+- **Autores institucionais:** Hyperf e seus colaboradores.
+- **Ano e tipo:** documentação e código oficiais contínuos; ano de publicação não identificado.
+- **DOI/identificador:** versão v3.2.5 do componente; DOI não identificado.
+- **URLs:** https://github.com/hyperf/hyperf/blob/master/docs/en/validation.md e https://github.com/hyperf/hyperf/tree/v3.2.5/src/validation .
+- **Data de acesso:** 8 nov. 2026.
+- **Fundamenta:** uso de `FormRequest`, `rules()`, `validated()`, `ValidationMiddleware` e tratamento de `ValidationException`. Documentação consultada via Context7 e comportamento conferido no código da dependência instalada. Componente oficial adotado para substituir regras comuns manuais de entrada, preservando o contrato estrito da API; sem alteração de arquitetura ou infraestrutura.
+- **Status:** consultada para implementação técnica; não citada no artigo. Ano não verificado; avaliar critério temporal antes de uso acadêmico.
+
+### Hyperf — Helpers e Stringable
+
+- **Título:** *3.1 Upgrade Guide — Utils package changes* e código de `Hyperf\Stringable\Str`.
+- **Autores institucionais:** Hyperf e seus colaboradores.
+- **Ano e tipo:** documentação e código oficiais contínuos; ano de publicação não identificado.
+- **DOI:** não identificado.
+- **URLs:** https://github.com/hyperf/hyperf/blob/master/docs/en/upgrade/3.1.md e https://github.com/hyperf/hyperf/blob/3.2/src/stringable/src/Str.php .
+- **Data de acesso:** 8 nov. 2026.
+- **Fundamenta:** existência de helpers oficiais, separação em componentes e métodos `Str::isUuid()` e `Str::uuid()`. Documentação consultada via Context7 e métodos conferidos na dependência instalada; geração de UUID exige `ramsey/uuid`, ausente no lock atual.
+- **Verificação na implementação em 8 nov. 2026:** instalado `hyperf/amqp` v3.2.5 pelo Composer e consultados os fontes distribuídos de `ConnectionFactory`, `AMQPConnection`, `Params`, `ConfigProvider`, `IO/IOFactory`, `IO/SwooleIO`, `Listener/MainWorkerStartListener` e a configuração publicada. A integração usa a fábrica oficial com canais exclusivos; o adaptador local preserva publicação obrigatória e confirmações.
+- **Status:** consultada para revisão técnica; não citada no artigo. Ano não verificado; avaliar critério temporal antes de uso acadêmico.
+
+### Hyperf — Request e parsing JSON
+
+- **Título:** *Request* e implementação de `JsonParser`.
+- **Autores institucionais:** Hyperf e seus colaboradores.
+- **Ano e tipo:** documentação e código oficiais contínuos; ano de publicação não identificado.
+- **DOI:** não identificado.
+- **URLs:** https://github.com/hyperf/hyperf/blob/master/docs/en/request.md e https://github.com/hyperf/hyperf/blob/3.2/src/http-message/src/Server/Request/JsonParser.php .
+- **Data de acesso:** 8 nov. 2026.
+- **Fundamenta:** leitura nativa de dados JSON; na dependência instalada, `JsonParser` lança `BadRequestHttpException` para JSON malformado por padrão. Conferência da duplicação de parsing em `Input::body`, removida em favor de `getParsedBody()`; preservadas as exigências de mídia JSON e corpo como objeto na aplicação.
+- **Verificação na implementação em 8 nov. 2026:** instalado `hyperf/amqp` v3.2.5 pelo Composer e consultados os fontes distribuídos de `ConnectionFactory`, `AMQPConnection`, `Params`, `ConfigProvider`, `IO/IOFactory`, `IO/SwooleIO`, `Listener/MainWorkerStartListener` e a configuração publicada. A integração usa a fábrica oficial com canais exclusivos; o adaptador local preserva publicação obrigatória e confirmações.
+- **Status:** consultada para revisão técnica; não citada no artigo. Ano não verificado; avaliar critério temporal antes de uso acadêmico.
+
+### Hyperf — AMQP
+
+- **Título:** *AMQP*, documentação da branch 3.2.
+- **Código oficial complementar consultado:** `src/amqp/src/{Producer,Consumer,ConnectionFactory,AMQPConnection,Builder,ConfigProvider}.php`, `src/amqp/src/Message/ConsumerMessage.php`, `src/amqp/src/Listener/BeforeMainServerStartListener.php`, `src/amqp/publish/amqp.php`, `src/amqp/composer.json` e `src/process/src/AbstractProcess.php`, na branch 3.2 de https://github.com/hyperf/hyperf .
+- **Autores institucionais:** Hyperf e seus colaboradores.
+- **Ano e tipo:** documentação oficial contínua; ano de publicação não identificado.
+- **DOI/identificador:** branch 3.2 do repositório oficial; DOI não identificado.
+- **URL:** https://github.com/hyperf/hyperf/blob/3.2/docs/en/amqp.md .
+- **Data de acesso:** 8 nov. 2026.
+- **Fundamenta:** componente oficial com produtores, consumidores, pool de conexões, QoS, resultados de confirmação e criação e recuperação de processos consumidores. Consultado para avaliar sobreposição com o transporte RabbitMQ e o ciclo do worker locais; a documentação não estabelece substituição direta da coleta em lotes nem da outbox do projeto.
+- **Reconsulta em 8 nov. 2026:** análise para planejar a refatoração, sem implementação. O produtor aceita confirmação, mas chama `basic_publish` sem `mandatory`; o consumidor processa uma mensagem por callback e converte exceções não tratadas em `Result::DROP`. A fábrica gerencia conexões e canais com suporte a corrotinas. Esses comportamentos exigem preservar explicitamente detecção de publicação sem rota, ACK após transação em lote, recuperação de falhas e inicialização das filas antes de aceitar posts com o worker parado. O componente continua dependendo de `php-amqplib/php-amqplib`. Código da branch consultado, sem resolução ou execução de uma versão instalada de `hyperf/amqp`.
+- **Verificação na implementação em 8 nov. 2026:** instalado `hyperf/amqp` v3.2.5 pelo Composer e consultados os fontes distribuídos de `ConnectionFactory`, `AMQPConnection`, `Params`, `ConfigProvider`, `IO/IOFactory`, `IO/SwooleIO`, `Listener/MainWorkerStartListener` e a configuração publicada. A integração usa a fábrica oficial com canais exclusivos; o adaptador local preserva publicação obrigatória e confirmações.
+- **Status:** consultada para revisão técnica; não citada no artigo. Ano não verificado; avaliar critério temporal antes de uso acadêmico.

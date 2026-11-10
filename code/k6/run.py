@@ -10,9 +10,53 @@ import os
 from pathlib import Path
 import subprocess
 import sys
+import time
+from urllib.error import URLError
+from urllib.request import urlopen
 
 ROOT = Path(__file__).resolve().parent
 FLOWS = ('social', 'validSearch', 'invalidSearch')
+RESET_TIMEOUT_SECONDS = 300
+
+
+def reset_commands(architecture):
+    backend = ROOT.parent.parent / 'backends' / ('hyperf-async' if architecture == 'async' else 'laravel-sync')
+    compose = ['docker', 'compose', '-f', str(backend / 'compose.yaml')]
+    if architecture == 'async':
+        return [(compose + ['down', '--volumes', '--remove-orphans'], backend),
+                (compose + ['up', '-d', '--build', '--wait', '--wait-timeout', '300'], backend)]
+    return [(compose + ['down', '--volumes', '--remove-orphans'], backend),
+            (compose + ['up', '-d', '--build', '--wait', '--wait-timeout', '300'], backend),
+            (compose + ['exec', '-T', 'app', 'php', 'artisan', 'migrate:fresh', '--force'], backend)]
+
+
+def wait_for_api(base_url, timeout=RESET_TIMEOUT_SECONDS):
+    deadline = time.monotonic() + timeout
+    last_error = 'sem resposta HTTP 200'
+    while time.monotonic() < deadline:
+        try:
+            with urlopen(base_url.rstrip('/') + '/metricas', timeout=5) as response:
+                if response.status == 200:
+                    return
+                last_error = f'HTTP {response.status}'
+        except (OSError, URLError) as error:
+            last_error = str(error)
+        time.sleep(2)
+    raise RuntimeError(f'API indisponível após {timeout}s em /metricas: {last_error}')
+
+
+def clean_architecture(architecture, base_url, log, command_runner=subprocess.run,
+                       api_waiter=wait_for_api):
+    commands = reset_commands(architecture)
+    if not (commands[0][1] / 'compose.yaml').exists():
+        raise RuntimeError(f'Composição da arquitetura {architecture} ainda não existe: {commands[0][1]}')
+    for command, cwd in commands:
+        log.write(f"$ (cd {cwd} && {' '.join(command)})\n")
+        log.flush()
+        result = command_runner(command, cwd=cwd, text=True, stdout=log, stderr=subprocess.STDOUT)
+        if result.returncode:
+            raise RuntimeError(f"Comando de reset falhou ({result.returncode}): {' '.join(command)}")
+    api_waiter(base_url)
 
 
 def load_config(path):
@@ -167,9 +211,12 @@ def build_report(directory, manifest, exit_code):
         reasons.append('Resumo k6 ausente; execução incompleta.')
     if not prepared:
         reasons.append('Preparação não concluída.')
+    reset_failed = manifest.get('clean', {}).get('status') == 'failed'
+    if reset_failed:
+        reasons.append('Reset ou verificação de disponibilidade falhou; k6 não foi iniciado.')
     if sum(counts['dropped'].values()):
         reasons.append('Gerador não iniciou todas as ações: dropped_iterations > 0.')
-    if exit_code not in (0, 99):
+    if exit_code not in (0, 99) and not reset_failed:
         reasons.append(f'Falha de execução do k6: código {exit_code}.')
     baseline = prepared['baseline'] if prepared else None
     observed = {}
@@ -211,6 +258,8 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--base-url', required=True, help='URL do balanceador, sem caminhos de endpoint')
     parser.add_argument('--architecture', required=True, choices=('sync', 'async'))
+    parser.add_argument('--clean', action='store_true',
+                        help='recria os serviços e dados persistentes locais desta arquitetura')
     parser.add_argument('--config', type=Path, default=ROOT / 'config.json')
     parser.add_argument('--output', type=Path, help='Diretório novo; execuções anteriores nunca são sobrescritas')
     args = parser.parse_args()
@@ -232,6 +281,10 @@ def main():
                 'working_tree_dirty': bool(subprocess.check_output(['git', 'status', '--porcelain'], cwd=ROOT)),
                 'k6_version': version,
                 'script_sha256': hashlib.sha256((ROOT / 'stress.js').read_bytes()).hexdigest(),
+                'clean': {'requested': args.clean, 'status': 'not_requested',
+                          'commands': [command for command, _ in reset_commands(args.architecture)]
+                          if args.clean else [],
+                          'started_at': None, 'completed_at': None, 'error': None},
                 'environment': {'platform': sys.platform, 'backend_images': None,
                                 'resource_limits_verified': False}}
     (directory / 'manifest.json').write_text(json.dumps(manifest, ensure_ascii=False, indent=2))
@@ -239,9 +292,25 @@ def main():
            'SUMMARY_PATH': str(directory / 'summary.json')}
     command = ['k6', 'run', '--log-format', 'raw', '--console-output', str(directory / 'actions.jsonl'),
                '--out', f'json={directory / "metrics.jsonl"}', str(ROOT / 'stress.js')]
-    print(f'Executando {config["scenario"]} em {args.base_url}. Artefatos: {directory}', flush=True)
     with (directory / 'output.log').open('w') as output:
-        result = subprocess.run(command, env=env, stdout=output, stderr=subprocess.STDOUT)
+        if args.clean:
+            manifest['clean']['status'] = 'running'
+            manifest['clean']['started_at'] = datetime.now(timezone.utc).isoformat()
+            (directory / 'manifest.json').write_text(json.dumps(manifest, ensure_ascii=False, indent=2))
+            try:
+                clean_architecture(args.architecture, args.base_url, output)
+                manifest['clean']['status'] = 'succeeded'
+            except (OSError, RuntimeError) as error:
+                manifest['clean']['status'] = 'failed'
+                manifest['clean']['error'] = str(error)
+                print(f'Falha no reset: {error}', file=output, flush=True)
+            manifest['clean']['completed_at'] = datetime.now(timezone.utc).isoformat()
+            (directory / 'manifest.json').write_text(json.dumps(manifest, ensure_ascii=False, indent=2))
+        if manifest['clean']['status'] == 'failed':
+            result = subprocess.CompletedProcess(command, 1)
+        else:
+            print(f'Executando {config["scenario"]} em {args.base_url}. Artefatos: {directory}', flush=True)
+            result = subprocess.run(command, env=env, stdout=output, stderr=subprocess.STDOUT)
     report = build_report(directory, manifest, result.returncode)
     print(f'Relatório: {directory / "report.json"} ({report["measurement"]["status"]})')
     return result.returncode
