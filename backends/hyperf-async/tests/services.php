@@ -43,10 +43,19 @@ final class StubFactory extends BrokerFactory {
 }
 $client = new StubClient();
 $users = new UserRepository($client);
-$follow = new FollowService($users, new FollowRepository($client));
+$cacheClient = new StubClient();
+$cacheClient->next = [['n' => ['id' => 'cached']]];
+$cachedUsers = new UserRepository($cacheClient);
+check($cachedUsers->get('cached') === ['id' => 'cached']);
+$cachedUsers->get('cached');
+check(count($cacheClient->queries) === 1); // Reutiliza a consulta bem-sucedida.
+$cacheClient->next = [];
+invalid(fn () => $cachedUsers->get('missing'), 404); // Ausências continuam consultando o banco.
+$follow = new FollowService(new FollowRepository($client));
+$client->next = [['seguidor_existe' => true, 'seguido_existe' => true]];
 invalid(fn () => $follow->create(['seguidor_id' => 'a', 'seguido_id' => 'a']));
-check(count($client->queries) === 2); // Consulta os recursos antes da regra de auto-relação.
-$client->next = [];
+check(count($client->queries) === 1); // Valida e grava em uma transação Neo4j.
+$client->next = [['seguidor_existe' => false, 'seguido_existe' => true]];
 invalid(fn () => $follow->create(['seguidor_id' => 'missing', 'seguido_id' => 'a']), 404);
 $client->next = [['n' => ['usuario_id' => 'author']]];
 $share = new ShareService($users, new PostRepository($client), new ShareRepository($client));

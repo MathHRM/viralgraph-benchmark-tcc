@@ -2,6 +2,7 @@
 declare(strict_types=1);
 namespace App\Repository;
 
+use App\Exception\ApiError;
 use App\Infrastructure\Neo4j\Neo4jClient;
 
 final class FeedRepository
@@ -10,12 +11,19 @@ final class FeedRepository
 
     public function page(string $uid, ?array $cursor): array
     {
-        return $this->client->run('MATCH (e:Entry {usuario_id:$uid}), (p:Post {id:e.post_id})
-            WHERE $seq IS NULL OR e.seq < $seq OR (e.seq=$seq AND p.id < $last)
-            RETURN properties(p) AS post, e.origem AS origem, e.autor_evento_id AS autor_evento_id,
-                e.evento_id AS evento_id, e.seq AS seq
-            ORDER BY seq DESC, post.id DESC LIMIT 51', [
+        $rows = $this->client->run('MATCH (u:User {id:$uid})
+            RETURN u.id AS user_id, COLLECT {
+                MATCH (e:Entry {usuario_id:$uid}), (p:Post {id:e.post_id})
+                WHERE $seq IS NULL OR e.seq < $seq OR (e.seq=$seq AND p.id < $last)
+                RETURN {post: properties(p), origem: e.origem, autor_evento_id: e.autor_evento_id,
+                    evento_id: e.evento_id, seq: e.seq}
+                ORDER BY e.seq DESC, p.id DESC LIMIT 51
+            } AS entries', [
             'uid' => $uid, 'seq' => $cursor[1] ?? null, 'last' => $cursor[2] ?? '',
         ]);
+        if (!$rows) {
+            throw new ApiError(404, 'nao_encontrado', 'Recurso não encontrado.');
+        }
+        return $rows[0]['entries'];
     }
 }
