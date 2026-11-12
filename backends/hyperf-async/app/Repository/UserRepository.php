@@ -23,7 +23,7 @@ final class UserRepository
             return $this->cache[$id];
         }
 
-        $rows = $this->client->run("MATCH (n:User {id:\$id}) RETURN properties(n) AS n", ['id' => $id]);
+        $rows = $this->client->run("MATCH (n:User {id:\$id}) RETURN n{.id, .nome, .apelido, .nascimento} AS n", ['id' => $id]);
         if (!$rows) {
             throw new ApiError(404, 'nao_encontrado', 'Recurso não encontrado.');
         }
@@ -35,7 +35,7 @@ final class UserRepository
 
     public function search(string $term, ?array $cursor): array
     {
-        return $this->client->run('MATCH (n:User) WHERE (n.nome CONTAINS $term OR n.apelido CONTAINS $term) AND n.id > $last RETURN properties(n) AS item ORDER BY n.id LIMIT 51', [
+        return $this->client->run('MATCH (n:User) WHERE (n.nome CONTAINS $term OR n.apelido CONTAINS $term) AND n.id > $last RETURN n{.id, .nome, .apelido, .nascimento} AS item ORDER BY n.id LIMIT 51', [
             'term' => $term, 'last' => $cursor[2] ?? '',
         ]);
     }

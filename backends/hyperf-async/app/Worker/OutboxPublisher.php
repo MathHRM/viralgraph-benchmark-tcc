@@ -9,11 +9,21 @@ final class OutboxPublisher
 {
     public function __construct(private DistributionTaskRepository $tasks) {}
 
-    public function publish(Broker $broker, int $size): void
+    /** Retorna quantas tarefas pendentes foram lidas; marca em lote as já confirmadas, inclusive se uma publicação falhar. */
+    public function publish(Broker $broker, int $size): int
     {
-        foreach ($this->tasks->pending($size) as $task) {
-            $broker->publish('distribution', $task);
-            $this->tasks->markPublished($task);
+        $pending = $this->tasks->pending($size);
+        $published = [];
+        try {
+            foreach ($pending as $task) {
+                $broker->publish('distribution', $task);
+                $published[] = $task['id'];
+            }
+        } finally {
+            if ($published) {
+                $this->tasks->markPublished($published);
+            }
         }
+        return count($pending);
     }
 }
