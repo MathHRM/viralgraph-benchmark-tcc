@@ -11,6 +11,7 @@ x-app: &app
     REFERENCE_DATE: ${REFERENCE_DATE:-2026-11-08}
     BATCH_SIZE: ${BATCH_SIZE:-100}
     FLUSH_MS: ${FLUSH_MS:-5}
+    DISTRIBUTION_SLICE_MS: ${DISTRIBUTION_SLICE_MS:-50}
   depends_on:
     api1: {condition: service_healthy}
   ulimits:
@@ -95,6 +96,8 @@ services:
       NEO4J_server_memory_heap_max__size: 512m
       NEO4J_server_memory_pagecache_size: 256m
       NEO4J_server_jvm_additional: "-XX:ActiveProcessorCount=1"
+      # ActiveProcessorCount=1 reduz o Jetty a uma thread; a API HTTP serializaria todas as transações.
+      NEO4J_server_threads_worker__count: ${NEO4J_HTTP_THREADS:-32}
     volumes: ["neo4j:/data"]
     cpus: ${NEO4J_CPUS:-0.50}
     mem_limit: ${NEO4J_MEMORY:-1400m}

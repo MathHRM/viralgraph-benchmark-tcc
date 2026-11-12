@@ -18,6 +18,9 @@ final class FeedDistributor
         } while (!$done && $running());
         if ($done) {
             $message->ack();
+        } else {
+            // Fatia encerrada ou desligamento: cursor já confirmado, tarefa volta à fila sem bloquear posts.
+            $message->nack(true);
         }
     }
 }

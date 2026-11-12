@@ -9,11 +9,15 @@ final class FeedRepository
 {
     public function __construct(private Neo4jClient $client) {}
 
+    /**
+     * Percorre só as relações FEED do usuário (index-free adjacency): custo proporcional
+     * ao feed dele, não ao total de entradas do banco. seq é única por usuário.
+     */
     public function page(string $uid, ?array $cursor): array
     {
         $rows = $this->client->run('MATCH (u:User {id:$uid})
             RETURN u.id AS user_id, COLLECT {
-                MATCH (e:Entry {usuario_id:$uid}), (p:Post {id:e.post_id})
+                MATCH (u)-[e:FEED]->(p:Post)
                 WHERE $seq IS NULL OR e.seq < $seq OR (e.seq=$seq AND p.id < $last)
                 RETURN {post: properties(p), origem: e.origem, autor_evento_id: e.autor_evento_id,
                     evento_id: e.evento_id, seq: e.seq}

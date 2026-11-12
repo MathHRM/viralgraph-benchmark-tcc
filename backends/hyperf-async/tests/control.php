@@ -26,7 +26,7 @@ Swoole\Coroutine\run(function () use ($container, $argv) {
                 $broker->close();
                 break;
             case 'origins':
-                echo json_encode($graph->run('MATCH (o:Origin {usuario_id:$user,post_id:$post}) RETURN count(o) AS total',
+                echo json_encode($graph->run('MATCH (:User {id:$user})-[v:VIA]->(:Post {id:$post}) RETURN count(v) AS total',
                     ['user' => $argv[2], 'post' => $argv[3]])[0]);
                 break;
         }
