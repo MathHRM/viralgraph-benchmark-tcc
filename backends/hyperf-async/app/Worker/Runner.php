@@ -19,8 +19,9 @@ final class Runner
     {
         $size = (int) (getenv('BATCH_SIZE') ?: 100);
         $flush = (int) (getenv('FLUSH_MS') ?: 5);
-        if ($size < 1 || $size > 1000 || $flush < 1 || $flush > 1000) {
-            throw new \RuntimeException('BATCH_SIZE ou FLUSH_MS inválido.');
+        $slice = (int) (getenv('DISTRIBUTION_SLICE_MS') ?: 50);
+        if ($size < 1 || $size > 1000 || $flush < 1 || $flush > 1000 || $slice < 1 || $slice > 10000) {
+            throw new \RuntimeException('BATCH_SIZE, FLUSH_MS ou DISTRIBUTION_SLICE_MS inválido.');
         }
         $this->running = true;
         pcntl_async_signals(true);
@@ -30,6 +31,8 @@ final class Runner
             $broker = null;
             try {
                 $broker = $this->brokers->open();
+                $outboxAt = 0.0;
+                $outboxFull = true;
                 while ($this->running) {
                     touch('/app/runtime/worker-heartbeat');
                     $messages = [];
@@ -45,10 +48,15 @@ final class Runner
                     if ($messages) {
                         $this->batches->process($messages);
                     }
-                    $this->outbox->publish($broker, $size);
+                    // Outbox após novos posts, página cheia ou a cada 50 ms (compartilhamentos gravados pelas APIs).
+                    if ($messages || $outboxFull || microtime(true) - $outboxAt > 0.05) {
+                        $outboxFull = $this->outbox->publish($broker, $size) >= $size;
+                        $outboxAt = microtime(true);
+                    }
                     $message = $broker->channel->basic_get('distribution');
                     if ($message) {
-                        $this->feeds->process($message, $size, fn () => $this->running);
+                        $until = microtime(true) + $slice / 1000;
+                        $this->feeds->process($message, $size, fn () => $this->running && microtime(true) < $until);
                     }
                 }
             } catch (\Throwable $e) {

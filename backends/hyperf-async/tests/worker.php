@@ -65,12 +65,14 @@ catch (JsonException) {}
 check(!$message->acked);
 $distribution = new class('{"id":"task"}') extends AMQPMessage {
     public bool $acked = false;
+    public bool $requeued = false;
     public function ack($multiple = false): void { $this->acked = true; }
+    public function nack($requeue = false, $multiple = false): void { $this->requeued = $requeue; }
 };
 $feeds = new FeedDistributor(new DistributionTaskRepository($client));
 $client->rows = [['done' => false]];
 $feeds->process($distribution, 100, fn () => false);
-check(!$distribution->acked); // Encerramento antes do último lote devolve a tarefa à fila.
+check(!$distribution->acked && $distribution->requeued); // Fatia ou encerramento antes do último lote devolve a tarefa à fila.
 $client->rows = [['done' => true]];
 $feeds->process($distribution, 100, fn () => true);
 check($distribution->acked);

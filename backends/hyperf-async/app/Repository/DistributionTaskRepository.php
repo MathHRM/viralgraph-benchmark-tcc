@@ -13,20 +13,29 @@ final class DistributionTaskRepository
         return $this->client->run('MATCH (t:Task {published:false, done:false}) RETURN t.id AS id LIMIT $size', ['size' => $size]);
     }
 
-    public function markPublished(array $task): void
+    /** @param list<string> $ids */
+    public function markPublished(array $ids): void
     {
-        $this->client->run('MATCH (t:Task {id:$id}) SET t.published=true', $task);
+        $this->client->run('UNWIND $ids AS id MATCH (t:Task {id:id}) SET t.published=true', ['ids' => $ids]);
     }
 
-    /** Cursor e entregas são confirmados juntos; reentrega não muda origem nem posição. */
+    /**
+     * Cursor e entregas são confirmados juntos; reentrega não muda origem nem posição.
+     * Follow guarda seguido_id/seguidor_id; ordenar pelas duas chaves faz o índice follow_target_follower
+     * entregar o lote em ordem a partir do cursor, sem ler todos os seguidores do ator a cada lote.
+     */
     public function distribute(string $id, int $size): bool
     {
         $rows = $this->client->run('MATCH (t:Task {id:$id}), (p:Post {id:t.post_id}), (counter:Counter {id:"feed"})
+            WHERE t.done=false
             SET counter.value=counter.value+1
             WITH t,p,counter
-            MATCH (recipientUser:User)-[:FOLLOWS]->(f:Follow)-[:TARGET]->(:User {id:t.actor})
-            WHERE f.seguidor_id > t.cursor AND f.seguidor_id <> p.usuario_id AND f.position <= t.follow_cutoff AND t.done=false
-            WITH t,p,counter,f ORDER BY f.seguidor_id LIMIT $size
+            CALL (t,p) {
+                MATCH (f:Follow) USING INDEX f:Follow(seguido_id, seguidor_id)
+                WHERE f.seguido_id = t.actor AND f.seguidor_id > t.cursor
+                    AND f.seguidor_id <> p.usuario_id AND f.position <= t.follow_cutoff
+                RETURN f ORDER BY f.seguido_id, f.seguidor_id LIMIT $size
+            }
             WITH t,p,counter,collect(f.seguidor_id) AS recipients
             UNWIND range(0,size(recipients)-1) AS i
             WITH t,p,counter,recipients,i,recipients[i] AS recipient

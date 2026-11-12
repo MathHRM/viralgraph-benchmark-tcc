@@ -13,11 +13,13 @@ final class FeedRepository
     {
         $rows = $this->client->run('MATCH (u:User {id:$uid})
             RETURN u.id AS user_id, COLLECT {
-                MATCH (e:Entry {usuario_id:$uid}), (p:Post {id:e.post_id})
-                WHERE $seq IS NULL OR e.seq < $seq OR (e.seq=$seq AND p.id < $last)
+                MATCH (e:Entry {usuario_id:$uid}) USING INDEX e:Entry(usuario_id, seq)
+                WHERE e.seq IS NOT NULL AND ($seq IS NULL OR e.seq < $seq OR (e.seq=$seq AND e.post_id < $last))
+                WITH e ORDER BY e.seq DESC, e.post_id DESC LIMIT 51
+                MATCH (p:Post {id:e.post_id})
                 RETURN {post: properties(p), origem: e.origem, autor_evento_id: e.autor_evento_id,
                     evento_id: e.evento_id, seq: e.seq}
-                ORDER BY e.seq DESC, p.id DESC LIMIT 51
+                ORDER BY e.seq DESC, e.post_id DESC
             } AS entries', [
             'uid' => $uid, 'seq' => $cursor[1] ?? null, 'last' => $cursor[2] ?? '',
         ]);
