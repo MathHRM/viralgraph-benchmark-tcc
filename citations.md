@@ -357,3 +357,14 @@
 - **Reconsulta em 8 nov. 2026:** análise para planejar a refatoração, sem implementação. O produtor aceita confirmação, mas chama `basic_publish` sem `mandatory`; o consumidor processa uma mensagem por callback e converte exceções não tratadas em `Result::DROP`. A fábrica gerencia conexões e canais com suporte a corrotinas. Esses comportamentos exigem preservar explicitamente detecção de publicação sem rota, ACK após transação em lote, recuperação de falhas e inicialização das filas antes de aceitar posts com o worker parado. O componente continua dependendo de `php-amqplib/php-amqplib`. Código da branch consultado, sem resolução ou execução de uma versão instalada de `hyperf/amqp`.
 - **Verificação na implementação em 8 nov. 2026:** instalado `hyperf/amqp` v3.2.5 pelo Composer e consultados os fontes distribuídos de `ConnectionFactory`, `AMQPConnection`, `Params`, `ConfigProvider`, `IO/IOFactory`, `IO/SwooleIO`, `Listener/MainWorkerStartListener` e a configuração publicada. A integração usa a fábrica oficial com canais exclusivos; o adaptador local preserva publicação obrigatória e confirmações.
 - **Status:** consultada para revisão técnica; não citada no artigo. Ano não verificado; avaliar critério temporal antes de uso acadêmico.
+
+### Neo4j — Cypher Manual e Cypher Cheat Sheet: constraints, índices e planos
+
+- **Títulos:** *Constraints*, *Search-performance indexes*, *Planning and tuning* (Cypher Manual) e *Cypher Cheat Sheet*.
+- **Autor institucional:** Neo4j.
+- **Ano e tipo:** documentação oficial contínua (versão `current`); ano de publicação não identificado.
+- **DOI:** não identificado.
+- **URLs:** https://neo4j.com/docs/cypher-manual/current/constraints/ , https://neo4j.com/docs/cypher-manual/current/indexes/search-performance-indexes/overview/ , https://neo4j.com/docs/cypher-manual/current/planning-and-tuning/ e https://neo4j.com/docs/cypher-cheat-sheet/current/ .
+- **Data de acesso:** 11 nov. 2026.
+- **Fundamenta:** constraints compostas e de chave em relações indisponíveis na Community Edition (cheat sheet); uso de índices de relação, constraints de unicidade e leitura de planos `PROFILE` na remodelagem do backend Hyperf. A disponibilidade de constraint de unicidade em relação com propriedade única foi verificada empiricamente no Neo4j 5.26.32 Community.
+- **Status:** consultada para implementação técnica; não citada no artigo. Ano não verificado; avaliar critério temporal antes de uso acadêmico.

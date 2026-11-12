@@ -22,7 +22,8 @@ class Neo4jClient
             try {
                 $raw = curl_exec($ch);
                 if ($raw === false || curl_getinfo($ch, CURLINFO_RESPONSE_CODE) !== 200) {
-                    throw new \RuntimeException('Neo4j indisponível.');
+                    throw new \RuntimeException(sprintf('Neo4j indisponível (HTTP %d, cURL %d: %s).',
+                        curl_getinfo($ch, CURLINFO_RESPONSE_CODE), curl_errno($ch), curl_error($ch)));
                 }
                 $reusable = true;
                 $result = json_decode($raw, true, 512, JSON_THROW_ON_ERROR);

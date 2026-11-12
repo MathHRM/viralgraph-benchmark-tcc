@@ -27,14 +27,14 @@ final class PostRepository
 
     public function persistPosts(array $posts): void
     {
-        $this->client->run('MATCH (clock:Counter {id:"social"}) SET clock.value=clock.value+1
-            WITH clock UNWIND $posts AS p
+        // follow_cutoff = relógio do Neo4j neste lote: seguidores posteriores ficam fora do fan-out.
+        $this->client->run('UNWIND $posts AS p
             MATCH (u:User {id:p.usuario_id})
             MERGE (n:Post {id:p.id})
             ON CREATE SET n.usuario_id=p.usuario_id, n.conteudo=p.conteudo, n.criado_em=p.criado_em
             MERGE (u)-[:AUTHORED]->(n)
             MERGE (t:Task {id:p.id})
             ON CREATE SET t.post_id=p.id, t.actor=p.usuario_id, t.kind="publicacao",
-                t.cursor="", t.published=false, t.done=false, t.follow_cutoff=clock.value', ['posts' => $posts]);
+                t.cursor="", t.published=false, t.done=false, t.follow_cutoff=timestamp()', ['posts' => $posts]);
     }
 }
