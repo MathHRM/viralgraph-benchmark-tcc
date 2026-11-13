@@ -36,6 +36,19 @@ Textos são validados e persistidos como recebidos, sem normalização Unicode o
 
 Controllers, serviços e repositórios recebem dependências pelo construtor. O loop de consumo por `basic_get`, as transações, os formatos públicos e a persistência eventual foram preservados. Combinações GET/POST que já retornavam 404 continuam explícitas nas rotas para manter compatibilidade; outros métodos continuam com 405.
 
+## Concorrência: pool Neo4j e paralelismo de leitura
+
+O cliente Neo4j passa a limitar a concorrência de transações em voo por processo com um pool de permissões (`app/Infrastructure/Neo4j/Neo4jPool.php`), um `Hyperf\Engine\Channel` com `NEO4J_POOL_SIZE` tokens (padrão 32). Cada chamada a `Neo4jClient::run()` adquire uma permissão antes da transação e a devolve ao final, inclusive nas novas tentativas de deadlock. Com o pool cheio, a corrotina aguarda no canal — backpressure natural — em vez de abrir handles ilimitados. O padrão 32 espelha `server.threads.worker_count` do Neo4j (`NEO4J_HTTP_THREADS`): não adianta enviar mais transações simultâneas do que o Jetty da API HTTP tem threads para atender; o excesso degradaria o banco. O pool substitui a função de controle de concorrência que `POOL_LIMIT` não exercia (ele limita apenas handles keep-alive ociosos, que continuam reaproveitados por processo). Fora de corrotina (container em boot, `bin/init.php`, testes CLI), o pool é transparente: `acquire()`/`release()` são no-op, pois não há escalonador para suspender, e o canal é criado preguiçosamente apenas no primeiro uso em corrotina. `config/autoload/neo4j.php` centraliza `url`, `timeout_ms` e `pool_size`, todos derivados do ambiente.
+
+Duas leituras usam `Hyperf\Coroutine\Parallel` para disparar consultas independentes em corrotinas simultâneas, reduzindo a latência de "soma" para "máximo" dos round-trips:
+
+- `ShareService` valida a existência do usuário e do post em paralelo. A semântica é idêntica: a precedência do erro é preservada (se ambos faltarem, prevalece o 404 do usuário), e a regra do próprio post e a unicidade seguem inalteradas.
+- `FeedRepository` divide a leitura do feed em (a) verificação de existência do usuário e (b) página de entradas, atrás da flag `FEED_PARALLEL` (padrão `false`, mantendo o baseline na consulta única original). A resposta é idêntica ao contrato (`{data, proximo_cursor}`, 404 para usuário inexistente, mesma ordenação e cursor). O trade-off é explícito: o caminho paralelo dobra os round-trips de leitura; o ganho aparece quando há capacidade ociosa no Neo4j. A flag permite ligar/desligar o paralelismo entre rodadas de carga para medir o trade-off empiricamente.
+
+Ambos os caminhos caem na execução sequencial quando não há corrotina ativa, preservando o comportamento em contextos CLI e de setup. `FollowService` já resolve validação e escrita em uma única consulta Cypher e não foi alterado. Não há mudança de contrato: nenhum campo novo é adicionado ao corpo do feed.
+
+Observabilidade com OpenTelemetry fica deliberadamente fora desta entrega, por escopo e orçamento; permanecem `/metricas` e a coleta por `docker stats`. Essa limitação é intencional e deve ser tratada no texto do TCC, não constituindo equivalência com arquiteturas instrumentadas.
+
 ## Recursos e configuração
 
 Distribuição inicial **(assumed)**, ainda sem calibração experimental:
@@ -54,7 +67,7 @@ Distribuição inicial **(assumed)**, ainda sem calibração experimental:
 
 Variáveis: `NGINX_CPUS`, `NGINX_MEMORY`, `API_CPUS`, `API_MEMORY` (cada API), `WORKER_CPUS`, `WORKER_MEMORY`, `RABBITMQ_CPUS`, `RABBITMQ_MEMORY`, `NEO4J_CPUS`, `NEO4J_MEMORY`. Memória usa unidades aceitas pelo Compose, por exemplo `320m`. Neo4j tem heap inicial 256 MiB, máximo 512 MiB e page cache 256 MiB. A máquina host precisa de recursos adicionais para Docker e gerador de carga.
 
-`REFERENCE_DATE=2026-11-08` deve coincidir com o manifesto k6. `BATCH_SIZE=100` e `FLUSH_MS=5` são parâmetros iniciais **(assumed)**; o worker aceita lote de 1–1000 e janela de 1–1000 ms. O flush é a janela de coleta; não promete persistência ou resposta em 5 ms sob carga. `DISTRIBUTION_SLICE_MS=50` **(assumed)** limita o tempo contínuo de fan-out por tarefa: ao fim da fatia, o cursor já confirmado é mantido e a mensagem volta à fila (`nack` com requeue), para não bloquear a ingestão de posts. A outbox é consultada após novos posts, quando a página anterior veio cheia ou a cada 50 ms. `NEO4J_HTTP_THREADS=32` **(assumed)** define `server.threads.worker_count`; sem ele, `ActiveProcessorCount=1` reduz o Jetty da API HTTP a uma thread.
+`REFERENCE_DATE=2026-11-08` deve coincidir com o manifesto k6. `BATCH_SIZE=100` e `FLUSH_MS=5` são parâmetros iniciais **(assumed)**; o worker aceita lote de 1–1000 e janela de 1–1000 ms. O flush é a janela de coleta; não promete persistência ou resposta em 5 ms sob carga. `DISTRIBUTION_SLICE_MS=50` **(assumed)** limita o tempo contínuo de fan-out por tarefa: ao fim da fatia, o cursor já confirmado é mantido e a mensagem volta à fila (`nack` com requeue), para não bloquear a ingestão de posts. A outbox é consultada após novos posts, quando a página anterior veio cheia ou a cada 50 ms. `NEO4J_HTTP_THREADS=32` **(assumed)** define `server.threads.worker_count`; sem ele, `ActiveProcessorCount=1` reduz o Jetty da API HTTP a uma thread. `NEO4J_POOL_SIZE=32` casa com esse valor e limita as transações simultâneas por processo (backpressure); `FEED_PARALLEL=false` mantém a leitura do feed na consulta única e pode ser ligada por rodada de carga para medir o paralelismo.
 
 ## Persistência e recuperação
 
@@ -83,11 +96,12 @@ A integração grava dados, interrompe/reinicia o worker e o RabbitMQ e recria o
 docker compose exec -T api1 php tests/input.php
 docker compose exec -T api1 php tests/services.php
 docker compose exec -T api1 php tests/worker.php
+docker compose exec -T api1 php tests/parallel.php
 docker compose exec -T api1 php tests/amqp.php
 python3 -m unittest discover -s tests -p 'test_*.py' -v
 python3 bin/check-budget.py
 ```
 
-Os testes locais de serviços e worker usam substitutos em memória para verificar regras e a ordem das confirmações, inclusive em falhas. `tests/amqp.php` usa o broker real para verificar conexão compartilhada, canais isolados e rejeição de publicação sem rota. A integração real cobre contrato, Unicode, maioridade, concorrência entre APIs, cursores, cascatas, primeira entrega, replay e recuperação entre commit e ACK. `tests/control.php` é ferramenta interna de teste, sem endpoint HTTP. Para smoke do gerador existente, provisionar projeto Compose separado com volumes vazios e executar `code/k6/run.py --architecture async` a partir da raiz, com configuração curta. Não alterar o critério: o único GET após 1–30 ms precisa retornar 200; persistência eventual pode falhar nele. Consultar o registro de validação local em `tests/VALIDATION.md`.
+Os testes locais de serviços e worker usam substitutos em memória para verificar regras e a ordem das confirmações, inclusive em falhas. `tests/parallel.php` executa em runtime de corrotina (`Swoole\Coroutine\run`) e prova, com clientes-substitutos que contam chamadas simultâneas, o backpressure do pool no limite configurado, o paralelismo das duas validações do `ShareService` (preservando a precedência do 404) e o split do `FeedRepository` sob `FEED_PARALLEL`. `tests/amqp.php` usa o broker real para verificar conexão compartilhada, canais isolados e rejeição de publicação sem rota. A integração real cobre contrato, Unicode, maioridade, concorrência entre APIs, cursores, cascatas, primeira entrega, replay e recuperação entre commit e ACK. `tests/control.php` é ferramenta interna de teste, sem endpoint HTTP. Para smoke do gerador existente, provisionar projeto Compose separado com volumes vazios e executar `code/k6/run.py --architecture async` a partir da raiz, com configuração curta. Não alterar o critério: o único GET após 1–30 ms precisa retornar 200; persistência eventual pode falhar nele. Consultar o registro de validação local em `tests/VALIDATION.md`.
 
 Fontes técnicas consultadas estão registradas em [citations.md](../../citations.md): Hyperf, Docker Compose, RabbitMQ, API transacional e Cypher Manual do Neo4j. Não foram adicionadas referências ao artigo.

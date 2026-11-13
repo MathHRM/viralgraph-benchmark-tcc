@@ -215,6 +215,48 @@ class SocialApiTest extends TestCase
             ->assertJsonPath('erro.codigo', 'validacao');
     }
 
+    public function test_feed_is_ordered_by_persisted_sequence_and_uses_a_keyset_cursor(): void
+    {
+        $author = $this->createUser('feed-author');
+        $follower = $this->createUser('feed-reader');
+        $this->postJson('/seguir-usuario', [
+            'seguidor_id' => $follower->id,
+            'seguido_id' => $author->id,
+        ])->assertCreated();
+
+        for ($index = 0; $index < 51; $index++) {
+            $this->postJson('/posts', [
+                'usuario_id' => $author->id,
+                'conteudo' => 'feed post '.$index,
+            ])->assertCreated();
+        }
+
+        $firstPage = $this->getJson('/feed/'.$follower->id);
+        $firstPage->assertOk()->assertJsonCount(50, 'data')
+            ->assertJsonPath('data.0.post.conteudo', 'feed post 50')
+            ->assertJsonStructure(['data' => [['post', 'origem', 'autor_evento_id', 'evento_id']], 'proximo_cursor']);
+
+        $cursor = $firstPage->json('proximo_cursor');
+        $this->assertIsString($cursor);
+        $this->getJson('/feed/'.$follower->id.'?cursor='.urlencode($cursor))
+            ->assertOk()->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.post.conteudo', 'feed post 0')
+            ->assertJsonPath('proximo_cursor', null);
+    }
+
+    public function test_feed_rejects_invalid_cursor_and_unknown_user(): void
+    {
+        $user = $this->createUser('feed-cursor');
+
+        $this->getJson('/feed/'.$user->id.'?cursor=invalid')
+            ->assertUnprocessable()
+            ->assertJsonPath('erro.codigo', 'validacao');
+
+        $this->getJson('/feed/00000000-0000-4000-8000-000000000001')
+            ->assertNotFound()
+            ->assertJsonPath('erro.codigo', 'nao_encontrado');
+    }
+
     public function test_uuid_path_parameter_is_validated_and_missing_resource_is_404(): void
     {
         $this->getJson('/usuarios/not-a-uuid')

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\FeedRequest;
 use App\Services\FeedService;
 use Illuminate\Http\JsonResponse;
 
@@ -13,13 +14,8 @@ class FeedController extends Controller
         private readonly FeedService $service,
     ) {}
 
-    public function index(string $id): JsonResponse
+    public function index(FeedRequest $request, string $id): JsonResponse
     {
-        return response()->json([
-            'erro' => [
-                'codigo' => 'nao_implementado',
-                'mensagem' => 'A consulta paginada do feed aguarda a definição da sequência lógica dos eventos.',
-            ],
-        ], 501);
+        return response()->json($this->service->page($id, $request->input('cursor')));
     }
 }

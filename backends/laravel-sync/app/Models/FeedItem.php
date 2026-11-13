@@ -18,6 +18,7 @@ class FeedItem extends Model
         'origin',
         'event_author_id',
         'event_id',
+        'seq',
     ];
 
     public function newUniqueId(): string
