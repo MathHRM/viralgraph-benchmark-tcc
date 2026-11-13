@@ -135,6 +135,18 @@ class ReportTests(unittest.TestCase):
                                               lambda url: calls.append(url))
             self.assertEqual(calls, [commands[0][0], commands[1][0], 'http://localhost:9999'])
 
+    def test_reset_commands_use_benchmark_only_compose_projects(self):
+        async_commands = runner.reset_commands('async')
+        sync_commands = runner.reset_commands('sync')
+
+        self.assertTrue(all('tcc-benchmark-async' in command for command, _ in async_commands))
+        self.assertTrue(any(any('compose.benchmark.yaml' in value for value in command)
+                            for command, _ in async_commands))
+        self.assertTrue(all('tcc-benchmark-sync' in command for command, _ in sync_commands))
+        self.assertTrue(all(any('compose.benchmark.yaml' in value for value in command)
+                            for command, _ in sync_commands))
+        self.assertFalse(any('docker-compose.yml' in value for command, _ in sync_commands for value in command))
+
     def test_clean_reset_stops_on_command_failure_without_waiting(self):
         with tempfile.TemporaryDirectory() as temporary:
             backend = Path(temporary)
@@ -156,6 +168,9 @@ class ReportTests(unittest.TestCase):
             fake_k6 = fake_bin / 'k6'
             fake_k6.write_text(f'#!/bin/sh\nif [ "$1" = version ]; then echo k6-test; else touch "{marker}"; fi\n')
             fake_k6.chmod(0o755)
+            fake_docker = fake_bin / 'docker'
+            fake_docker.write_text('#!/bin/sh\nexit 1\n')
+            fake_docker.chmod(0o755)
             env = {**os.environ, 'PATH': f'{fake_bin}:{os.environ["PATH"]}'}
             result = subprocess.run(['python3', str(ROOT / 'run.py'), '--base-url',
                 'http://127.0.0.1:9999', '--architecture', 'sync', '--clean',
@@ -165,8 +180,9 @@ class ReportTests(unittest.TestCase):
             self.assertFalse(marker.exists())
             report = json.loads((directory / 'results' / 'report.json').read_text())
             self.assertEqual(report['manifest']['clean']['status'], 'failed')
-            self.assertIn('ainda não existe', report['manifest']['clean']['error'])
-            self.assertIn('não foi iniciado', report['measurement']['invalid_reasons'][-1])
+            self.assertIn('Comando de reset falhou', report['manifest']['clean']['error'])
+            self.assertTrue(any('não foi iniciado' in reason
+                                for reason in report['measurement']['invalid_reasons']))
 
     def execute(self, scenario, broken=False):
         server = ThreadingHTTPServer(('127.0.0.1', 0), Fixture)

@@ -47,8 +47,10 @@ export const options = {
 function log(kind, data) { console.log(JSON.stringify({ kind, time: Date.now(), ...data })); }
 function phase() { return exec.scenario.name === 'default' ? 'setup' : exec.scenario.name; }
 function request(method, path, body, route, expected = 200, stage = phase()) {
+  const timeoutMs = ['setup', 'audit'].includes(stage)
+    ? Math.max(config.request_timeout_ms, 10000) : config.request_timeout_ms;
   const response = http.request(method, `${base}${path}`, body ? JSON.stringify(body) : null, {
-    headers: { 'Content-Type': 'application/json' }, timeout: `${config.request_timeout_ms}ms`,
+    headers: { 'Content-Type': 'application/json' }, timeout: `${timeoutMs}ms`,
     redirects: 0, tags: { name: route, phase: stage },
     responseCallback: http.expectedStatuses(expected),
   });
@@ -90,10 +92,10 @@ function choose(index, salt = 0) {
 }
 export function setup() {
   const initial = readMetrics('before_setup');
-  if (!initial || initial.inserts_logicos !== 0) throw new Error('A execução exige banco vazio.');
+  if (!initial) throw new Error('Não foi possível obter as métricas iniciais da base.');
   const users = [];
   for (let i = 0; i < config.users; i++) {
-    const payload = { nome: `Pessoa ${i}`, apelido: `s${config.seed}-u${i}`, nascimento: '2000-01-15' };
+    const payload = { nome: `Pessoa ${i}`, apelido: `s${config.seed}-bench-u${i}`, nascimento: '2000-01-15' };
     const result = request('POST', '/usuarios', payload, 'usuarios_create', 201, 'setup');
     if (!result.passed || !result.data || typeof result.data.id !== 'string') {
       throw new Error('Falha ao preparar usuários.');
@@ -121,17 +123,23 @@ export function setup() {
   }
   let baseline = null;
   const deadline = Date.now() + config.setup_wait_ms;
+  const expected = {
+    usuarios: initial.usuarios + users.length,
+    feeds: initial.feeds + users.length,
+    relacoes_seguir: initial.relacoes_seguir + edges.length,
+    inserts_logicos: initial.inserts_logicos + users.length * 2 + edges.length,
+  };
   while (Date.now() < deadline) {
     baseline = readMetrics('setup_observation');
-    if (baseline && baseline.usuarios === users.length && baseline.feeds === users.length &&
-        baseline.relacoes_seguir === edges.length &&
-        baseline.inserts_logicos === users.length * 2 + edges.length) break;
+    if (baseline && baseline.usuarios === expected.usuarios && baseline.feeds === expected.feeds &&
+        baseline.relacoes_seguir === expected.relacoes_seguir &&
+        baseline.inserts_logicos === expected.inserts_logicos) break;
     baseline = null;
     sleep(config.feed_poll_ms / 1000);
   }
   if (!baseline) throw new Error('A base não estabilizou nas contagens esperadas.');
-  log('prepared', { users, edges, baseline, config });
-  return { users, edges, baseline };
+  log('prepared', { users, edges, initial, baseline, config });
+  return { users, edges, initial, baseline };
 }
 function begin() {
   const tags = { flow: exec.scenario.name };

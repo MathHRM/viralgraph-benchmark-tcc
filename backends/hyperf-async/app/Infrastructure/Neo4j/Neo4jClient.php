@@ -11,8 +11,30 @@ class Neo4jClient
     /** @var list<mixed> Handles ociosos reaproveitam conexões HTTP keep-alive entre corrotinas. */
     private array $idle = [];
 
+    /**
+     * Limita a concorrência de transações em voo por processo (backpressure). Instância por
+     * processo: Neo4jClient é singleton de DI, então todos os repositórios compartilham o pool.
+     */
+    private readonly Neo4jPool $pool;
+
+    public function __construct(?Neo4jPool $pool = null)
+    {
+        $this->pool = $pool ?? new Neo4jPool();
+    }
+
     /** Cada chamada é uma transação atômica; o handle pertence apenas à chamada. */
     public function run(string $query, array $params = []): array
+    {
+        // Uma permissão cobre a transação lógica inteira, inclusive as novas tentativas de deadlock.
+        $this->pool->acquire();
+        try {
+            return $this->transact($query, $params);
+        } finally {
+            $this->pool->release();
+        }
+    }
+
+    private function transact(string $query, array $params): array
     {
         $payload = json_encode(['statements' => [['statement' => $query, 'parameters' => (object) $params]]], JSON_THROW_ON_ERROR);
         for ($attempt = 0; $attempt < 3; $attempt++) {
@@ -56,15 +78,18 @@ class Neo4jClient
     private function open(): mixed
     {
         $ch = curl_init((getenv('NEO4J_URL') ?: 'http://neo4j:7474').'/db/neo4j/tx/commit');
-        curl_setopt_array($ch, [
+        $options = [
             CURLOPT_POST => true,
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_CONNECTTIMEOUT => 3,
-            CURLOPT_TIMEOUT_MS => 1800,
             CURLOPT_USERPWD => 'neo4j:'.(getenv('NEO4J_PASSWORD') ?: 'benchmark-local'),
             CURLOPT_HTTPHEADER => ['Content-Type: application/json'],
-            CURLOPT_TCP_KEEPALIVE => 1,
-        ]);
+            CURLOPT_TIMEOUT_MS => max(1_800, (int) (getenv('NEO4J_TIMEOUT_MS') ?: 1_800)),
+        ];
+        if (getenv('NEO4J_CURL_COROUTINE_HOOK') !== '1') {
+            $options[CURLOPT_TCP_KEEPALIVE] = 1;
+        }
+        curl_setopt_array($ch, $options);
         return $ch;
     }
 }

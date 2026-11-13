@@ -1,0 +1,9 @@
+.git
+.gitkeep
+vendor
+node_modules
+storage/logs
+*.log
+.env
+docker-compose.yml
+README.md

@@ -1,0 +1,10 @@
+{
+  "users": 1000000,
+  "posts": 5000000,
+  "follows": 5000000,
+  "shares": 5000000,
+  "feed_limit": 25000000,
+  "seed": 42,
+  "batch_size": 1000,
+  "reference_date": "2026-11-08"
+}

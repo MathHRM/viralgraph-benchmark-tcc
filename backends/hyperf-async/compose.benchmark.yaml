@@ -1,0 +1,20 @@
+services:
+  nginx:
+    ports: !override
+      - "127.0.0.1:${BENCHMARK_PORT:-19999}:80"
+
+  api1:
+    environment:
+      BENCHMARK_MODE: "1"
+      BENCHMARK_LOAD_CONCURRENCY: ${BENCHMARK_LOAD_CONCURRENCY:-1}
+      NEO4J_TIMEOUT_MS: ${NEO4J_TIMEOUT_MS:-10000}
+    volumes:
+      - "${CORPUS_DIR:?CORPUS_DIR is required}:/benchmark:ro"
+
+  api2:
+    environment:
+      NEO4J_TIMEOUT_MS: ${NEO4J_TIMEOUT_MS:-10000}
+
+  worker:
+    environment:
+      NEO4J_TIMEOUT_MS: ${NEO4J_TIMEOUT_MS:-10000}

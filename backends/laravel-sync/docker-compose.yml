@@ -1,0 +1,63 @@
+name: laravel-sync
+
+services:
+  app:
+    build:
+      context: .
+      args:
+        UID: ${UID:-1000}
+        GID: ${GID:-1000}
+    container_name: laravel-sync-app
+    working_dir: /var/www/html
+    volumes:
+      - .:/var/www/html
+    environment:
+      XDEBUG_MODE: ${XDEBUG_MODE:-off}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - laravel-sync-net
+
+  nginx:
+    image: nginx:alpine
+    container_name: laravel-sync-nginx
+    ports:
+      - "8000:80"
+    volumes:
+      - .:/var/www/html:ro
+      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - app
+    networks:
+      - laravel-sync-net
+
+  mysql:
+    image: mysql:8.0
+    container_name: laravel-sync-mysql
+    environment:
+      MYSQL_DATABASE: ${DB_DATABASE:-laravel_sync}
+      MYSQL_USER: ${DB_USERNAME:-laravel}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-secret}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-root}
+    volumes:
+      - dbdata:/var/lib/mysql
+      - ./docker/mysql/my.cnf:/etc/mysql/conf.d/my.cnf:ro
+    ports:
+      - "3308:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-u", "root", "-p$${MYSQL_ROOT_PASSWORD}"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    networks:
+      - laravel-sync-net
+
+networks:
+  laravel-sync-net:
+    driver: bridge
+
+volumes:
+  dbdata:

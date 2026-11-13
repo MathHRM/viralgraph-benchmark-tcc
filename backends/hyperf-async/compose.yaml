@@ -5,6 +5,8 @@ x-app: &app
   environment: &env
     NEO4J_URL: http://neo4j:7474
     NEO4J_PASSWORD: ${NEO4J_PASSWORD:-benchmark-local}
+    NEO4J_POOL_SIZE: ${NEO4J_POOL_SIZE:-32}
+    FEED_PARALLEL: ${FEED_PARALLEL:-false}
     RABBITMQ_HOST: rabbitmq
     RABBITMQ_USER: benchmark
     RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-benchmark-local}

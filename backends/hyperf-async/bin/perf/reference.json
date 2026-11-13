@@ -1,0 +1,19 @@
+{
+  "seed": 42,
+  "scenario": "reference",
+  "users": 100,
+  "reference_date": "2026-11-08",
+  "rate_scale": 1,
+  "time_scale": 0.3,
+  "preallocated_vus": 20,
+  "max_vus": 500,
+  "request_timeout_ms": 2000,
+  "feed_poll_ms": 100,
+  "feed_wait_ms": 3000,
+  "setup_wait_ms": 10000,
+  "recovery_seconds": 10,
+  "graceful_stop_seconds": 5,
+  "share_fraction": 0.5,
+  "post_fraction": 0.5,
+  "bucket_seconds": 1
+}
