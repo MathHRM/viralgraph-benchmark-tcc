@@ -60,14 +60,6 @@ class FeedItemRepository
         return $inserted;
     }
 
-    public function contains(string $userId, string $postId): bool
-    {
-        return FeedItem::query()
-            ->where('user_id', $userId)
-            ->where('post_id', $postId)
-            ->exists();
-    }
-
     public function count(): int
     {
         return FeedItem::query()->count();

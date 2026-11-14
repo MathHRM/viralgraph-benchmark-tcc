@@ -34,6 +34,7 @@ final class SchemaInitializer
     private const INDEXES = [
         'task_pending' => 'FOR (n:Task) ON (n.published, n.done)',
         'follows_target_follower' => 'FOR ()-[f:FOLLOWS]-() ON (f.seguido_id, f.seguidor_id)',
+        'reshared_post_id' => 'FOR ()-[r:RESHARED_FROM]-() ON (r.post_id)',
     ];
 
     public function __construct(private Neo4jClient $client) {}

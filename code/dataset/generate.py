@@ -262,6 +262,7 @@ NEO4J_SCHEMA = [
     'CREATE CONSTRAINT IF NOT EXISTS FOR ()-[r:VIA]-() REQUIRE r.key IS UNIQUE',
     'CREATE INDEX task_pending IF NOT EXISTS FOR (n:Task) ON (n.published, n.done)',
     'CREATE INDEX follows_target_follower IF NOT EXISTS FOR ()-[f:FOLLOWS]-() ON (f.seguido_id, f.seguidor_id)',
+    'CREATE INDEX reshared_post_id IF NOT EXISTS FOR ()-[r:RESHARED_FROM]-() ON (r.post_id)',
     'CALL db.awaitIndexes(300)',
 ]
 
@@ -285,7 +286,7 @@ def write_neo4j(data: dict, directory: Path) -> None:
     O import não valida constraints; unicidade das chaves é garantida pelo gerador e as
     constraints são criadas logo depois por schema.cypher (falhariam se houvesse duplicata).
     """
-    origin = {'publication': 'publicacao', 'share': 'compartilhamento'}
+    origin = {'publication': 'post', 'share': 'share'}  # mesmos valores do Laravel
     iso = lambda value: value.strftime('%Y-%m-%dT%H:%M:%SZ')
     write_csv(directory / 'users.csv.gz', ['id:ID(User)', 'nome', 'apelido', 'nascimento', 'feed_seq:long'],
               ([u['id'], u['name'], u['nickname'], '2000-01-15', u['feed_seq']] for u in data['users']))

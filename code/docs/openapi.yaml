@@ -120,7 +120,7 @@ paths:
         - Termo ausente, vazio ou só com espaços retorna 422; nenhuma correspondência retorna 200 com lista vazia. Limite de 100 caracteres para termo de usuários e 500 para posts.
         - Buscas e feed usam `{data: [...], proximo_cursor: null|string}`, com até 50 itens por página. Cursor inválido retorna 422. O cursor mantém a posição pela chave de ordenação; novas entradas anteriores ao cursor aparecem ao reiniciar a consulta.
         - Ordenação: buscas por ID crescente; feed por sequência persistida da primeira entrega decrescente, com ID como desempate. Não ordenar aleatoriamente ou depender de ordem implícita do banco.
-        - Cada item do feed contém `post`, `origem` (`publicacao` ou `compartilhamento`), `autor_evento_id` e `evento_id`. O cursor codifica a sequência e o ID do último item retornado, sem depender de offsets.
+        - Cada item do feed contém `post`, `origem` (`post` ou `share`), `autor_evento_id` e `evento_id`. O cursor codifica a sequência e o ID do último item retornado, sem depender de offsets.
         - Feed de usuário existente sem entradas retorna 200 com lista vazia; usuário inexistente retorna 404.
         - Consultar feed não deve criar associações de distribuição: o experimento solicitado é de fan-out na escrita.
       responses:
@@ -285,7 +285,7 @@ paths:
         - Termo ausente, vazio ou só com espaços retorna 422; nenhuma correspondência retorna 200 com lista vazia. Limite de 100 caracteres para termo de usuários e 500 para posts.
         - Buscas e feed usam `{data: [...], proximo_cursor: null|string}`, com até 50 itens por página. Cursor inválido retorna 422. O cursor mantém a posição pela chave de ordenação; novas entradas anteriores ao cursor aparecem ao reiniciar a consulta.
         - Ordenação: buscas por ID crescente; feed por sequência persistida da primeira entrega decrescente, com ID como desempate. Não ordenar aleatoriamente ou depender de ordem implícita do banco.
-        - Cada item do feed contém `post`, `origem` (`publicacao` ou `compartilhamento`), `autor_evento_id` e `evento_id`. O cursor codifica a sequência e o ID do último item retornado, sem depender de offsets.
+        - Cada item do feed contém `post`, `origem` (`post` ou `share`), `autor_evento_id` e `evento_id`. O cursor codifica a sequência e o ID do último item retornado, sem depender de offsets.
         - Feed de usuário existente sem entradas retorna 200 com lista vazia; usuário inexistente retorna 404.
         - Consultar feed não deve criar associações de distribuição: o experimento solicitado é de fan-out na escrita.
       responses:
@@ -349,7 +349,7 @@ paths:
       description: |-
         Substitui `POST /compartilhar-post` (removido). Ver `contrato-api.md`, seção "Compartilhamento e cascata".
 
-        Regras: usuário e post existem (404); autor não compartilha o próprio post; post precisa estar no feed de quem compartilha; `origem_usuario_id` (padrão: autor) é o autor ou um compartilhador do post e difere do usuário; par `(usuario_id, post_id)` único (422).
+        Regras: usuário e post existem (404); autor não compartilha o próprio post; presença no feed não é exigida (feed eventualmente consistente no assíncrono); `origem_usuario_id` (padrão: autor) é o autor ou um compartilhador do post e difere do usuário; par `(usuario_id, post_id)` único (422).
 
         Laravel/MySQL responde 201 após persistir e distribuir na mesma requisição. Hyperf/Neo4j responde 202 após confirmação do RabbitMQ; o consumer em lote persiste depois.
       parameters:
@@ -395,7 +395,7 @@ paths:
       tags:
       - Compartilhamentos
       description: |-
-        MySQL: CTE recursiva (`WITH RECURSIVE`). Neo4j: caminho variável `[:RESHARED_FROM*1..4]` filtrado pelo post. Até 1000 arestas, ordenadas por nível e `usuario_id`.
+        MySQL: CTE recursiva (`WITH RECURSIVE`). Neo4j: caminho variável `[:RESHARED_FROM*1..4]` filtrado pelo post. Até 500 arestas, ordenadas por nível e `usuario_id`.
       parameters:
       - name: id
         in: path
@@ -427,7 +427,7 @@ paths:
         - Termo ausente, vazio ou só com espaços retorna 422; nenhuma correspondência retorna 200 com lista vazia. Limite de 100 caracteres para termo de usuários e 500 para posts.
         - Buscas e feed usam `{data: [...], proximo_cursor: null|string}`, com até 50 itens por página. Cursor inválido retorna 422. O cursor mantém a posição pela chave de ordenação; novas entradas anteriores ao cursor aparecem ao reiniciar a consulta.
         - Ordenação: buscas por ID crescente; feed por sequência persistida da primeira entrega decrescente, com ID como desempate. Não ordenar aleatoriamente ou depender de ordem implícita do banco.
-        - Cada item do feed contém `post`, `origem` (`publicacao` ou `compartilhamento`), `autor_evento_id` e `evento_id`. O cursor codifica a sequência e o ID do último item retornado, sem depender de offsets.
+        - Cada item do feed contém `post`, `origem` (`post` ou `share`), `autor_evento_id` e `evento_id`. O cursor codifica a sequência e o ID do último item retornado, sem depender de offsets.
         - Feed de usuário existente sem entradas retorna 200 com lista vazia; usuário inexistente retorna 404.
         - Consultar feed não deve criar associações de distribuição: o experimento solicitado é de fan-out na escrita.
       responses:
@@ -700,8 +700,8 @@ components:
         origem:
           type: string
           enum:
-          - publicacao
-          - compartilhamento
+          - post
+          - share
         autor_evento_id:
           $ref: '#/components/schemas/UUID'
         evento_id:

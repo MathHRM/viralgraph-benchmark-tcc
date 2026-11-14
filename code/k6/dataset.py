@@ -155,7 +155,7 @@ def iter_feed_items(spec):
             seq += 1
             yield {'id': stable_id(spec.seed, 'feed', feed_index),
                    'user_id': user_id(spec, user_index), 'post_id': post_id(spec, post_index),
-                   'origin': 'publicacao', 'event_author_id': user_id(spec, author_index),
+                   'origin': 'post', 'event_author_id': user_id(spec, author_index),
                    'event_id': post_id(spec, post_index), 'seq': seq}
             feed_index += 1
 

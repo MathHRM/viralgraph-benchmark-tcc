@@ -30,8 +30,9 @@ final class ShareService
         }
         $authorId = $state['author_id'];
         $sourceId ??= $authorId;
-        // Mesmas regras do síncrono: post no feed, origem = autor ou compartilhador já persistido.
-        if ($authorId === $userId || $sourceId === $userId || $state['already_shared'] || !$state['in_feed']
+        // Mesmas regras do síncrono: origem = autor ou compartilhador já persistido. Presença no feed
+        // não é exigida: o feed é eventualmente consistente e geraria falsos negativos sob carga.
+        if ($authorId === $userId || $sourceId === $userId || $state['already_shared']
             || ($sourceId !== $authorId && !$state['source_shared'])) {
             throw new ApiError();
         }

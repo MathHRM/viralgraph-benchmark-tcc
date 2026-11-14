@@ -61,7 +61,7 @@ invalid(fn () => $follow->create(['seguidor_id' => 'missing', 'seguido_id' => 'a
 $factory = new StubFactory();
 $share = new ShareService(new ShareRepository($client), $factory);
 $state = fn (array $patch) => [array_merge(['user_exists' => true, 'author_id' => 'author',
-    'already_shared' => false, 'in_feed' => true, 'source_shared' => false], $patch)];
+    'already_shared' => false, 'source_shared' => false], $patch)];
 $client->next = $state(['user_exists' => false]);
 invalid(fn () => $share->accept(['usuario_id' => 'reader', 'post_id' => 'post']), 404);
 $client->next = $state(['author_id' => null]);
@@ -70,8 +70,6 @@ $client->next = $state([]);
 invalid(fn () => $share->accept(['usuario_id' => 'author', 'post_id' => 'post'])); // autor não compartilha
 invalid(fn () => $share->accept(['usuario_id' => 'reader', 'post_id' => 'post', 'origem_usuario_id' => 'reader']));
 invalid(fn () => $share->accept(['usuario_id' => 'reader', 'post_id' => 'post', 'origem_usuario_id' => 'other']));
-$client->next = $state(['in_feed' => false]);
-invalid(fn () => $share->accept(['usuario_id' => 'reader', 'post_id' => 'post']));
 $client->next = $state(['already_shared' => true]);
 invalid(fn () => $share->accept(['usuario_id' => 'reader', 'post_id' => 'post']));
 check($factory->opened === []); // nenhuma publicação para pedidos inválidos

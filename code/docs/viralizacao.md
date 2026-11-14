@@ -7,11 +7,11 @@ Roteiro de execução do teste que compara as duas composições sob compartilha
 | Rota | Laravel + MySQL (síncrono) | Hyperf + RabbitMQ + Neo4j (assíncrono) |
 | --- | --- | --- |
 | `POST /posts/:id/share` | `201`; registro + fan-out aos seguidores na mesma transação, `INSERT IGNORE` em lotes de 500 | `202` após confirmação do RabbitMQ; consumer em corrotina (prefetch 50) grava o lote com `UNWIND` numa transação |
-| `GET /posts/:id/propagation-tree` | CTE recursiva (`WITH RECURSIVE`), índice `shares(post_id, source_user_id)` | Caminho variável `[:RESHARED_FROM*1..4 {post_id}]` |
+| `GET /posts/:id/propagation-tree` | CTE recursiva (`WITH RECURSIVE`), índice `shares(post_id, source_user_id)`, `LIMIT 501` | Ancorada em `(:Post {id})` + autor; caminho variável `[:RESHARED_FROM*1..4 {post_id}]`, `ORDER BY`/`LIMIT 501` antes de montar o payload; índice `reshared_post_id` |
 | `GET /feed/:usuario_id` | Feed materializado (`feed_items`) | Feed materializado (`(:User)-[:FEED]->(:Post)`) |
 | `POST /posts` | Fan-out síncrono | Fila `posts` → outbox → fila `distribution` |
 
-O feed contém posts dos seguidos e posts compartilhados pelos seguidos (segundo grau), com uma entrada por `(usuário, post)`. Regras completas em [contrato-api.md](contrato-api.md).
+O feed contém posts dos seguidos e posts compartilhados pelos seguidos (segundo grau), com uma entrada por `(usuário, post)`; `origem` vale `post` ou `share` nas duas arquiteturas. A árvore retorna até 500 arestas (`truncado` indica corte). O compartilhamento valida usuário, post e origem (autor ou compartilhador), mas não exige o post no feed: no assíncrono o feed é eventualmente consistente e a exigência geraria falsos negativos sob carga. Regras completas em [contrato-api.md](contrato-api.md).
 
 ## Dataset (`code/dataset/generate.py`)
 

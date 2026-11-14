@@ -103,7 +103,7 @@ class BenchmarkCorpusCommandTest extends TestCase
             foreach ($posts as $post) {
                 if ($post[1] !== $followerId) {
                     $sequence++;
-                    $feedItems[] = [(string) Str::uuid(), $followerId, $post[0], 'publicacao',
+                    $feedItems[] = [(string) Str::uuid(), $followerId, $post[0], 'post',
                         $post[1], $post[0], $sequence];
                     if ($sequence <= 5) {
                         $shares[] = [(string) Str::uuid(), $followerId, $post[0], $createdAt];

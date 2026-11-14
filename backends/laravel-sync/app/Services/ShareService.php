@@ -63,12 +63,6 @@ class ShareService
             ]);
         }
 
-        if (! $this->feedItems->contains($userId, $postId)) {
-            throw ValidationException::withMessages([
-                'usuario_id' => ['O post precisa estar no feed do usuário para ser compartilhado.'],
-            ]);
-        }
-
         try {
             return DB::transaction(function () use ($userId, $postId, $post, $sourceUserId): Share {
                 $share = $this->shares->create($userId, $postId, $sourceUserId);

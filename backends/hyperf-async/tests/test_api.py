@@ -113,7 +113,7 @@ class ContractTest(unittest.TestCase):
                       {"nascimento": "2000-02-30"}, {"nascimento": "2100-01-01"}):
             self.assertEqual(request("POST", "/usuarios", valid | patch)[0], 422, patch)
         self.assertEqual(request("POST", "/usuarios", raw="{")[0], 400)
-        self.assertEqual(request("POST", "/usuarios", raw="")[0], 400)
+        self.assertEqual(request("POST", "/usuarios", raw="")[0], 422)
         self.assertEqual(request("POST", "/usuarios", raw=" \t\n")[0], 400)
         self.assertEqual(request("POST", "/usuarios", valid, media="text/plain")[0], 422)
         for value in ([], [valid], 0, 5, None, True, "texto"):
@@ -222,12 +222,12 @@ class ContractTest(unittest.TestCase):
             compose("start", "worker")
         wait_for(lambda: len(self.feed(b)) == 1 and len(self.feed(d)) == 1)
         first = self.feed(d)[0]
-        self.assertEqual(first["origem"], "publicacao")
+        self.assertEqual(first["origem"], "post")
         self.assertEqual(self.share(a, p)[0], 422)
         self.assertEqual(self.share(c, p, source=b)[0], 422)  # origem ainda não compartilhou
         self.assertEqual(self.share(b, p)[0], 202)
         wait_for(lambda: len(self.feed(c)) == 1)
-        self.assertEqual(self.feed(c)[0]["origem"], "compartilhamento")
+        self.assertEqual(self.feed(c)[0]["origem"], "share")
         self.assertEqual(self.share(c, p, source=b)[0], 202)
         wait_for(lambda: len(self.tree(p)[1]["data"]) == 2)
         tree = self.tree(p)[1]

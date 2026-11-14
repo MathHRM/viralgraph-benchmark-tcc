@@ -12,7 +12,7 @@ class ShareRepository
 {
     public const TREE_DEPTH = 4;
 
-    public const TREE_LIMIT = 1000;
+    public const TREE_LIMIT = 500;
 
     public function create(string $userId, string $postId, string $sourceUserId): Share
     {

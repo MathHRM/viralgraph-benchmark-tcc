@@ -108,7 +108,7 @@ Fan-out na escrita significa materializar uma associação entre o post e o feed
 
 Um post pode ser compartilhado por vários usuários, mas cada par `(usuario_id, post_id)` só pode ser registrado uma vez. Compartilhar não cria outro post original nem duplica seu conteúdo.
 
-`origem_usuario_id` registra de quem o usuário recebeu o post (aresta da árvore de propagação). Ausente, vale o autor (nível 1). Regras: usuário e post existem (404); o autor não compartilha o próprio post (422); o post precisa estar no feed de quem compartilha (422); a origem não é o próprio usuário e é o autor ou alguém que já compartilhou o post (422); repetição do par retorna 422.
+`origem_usuario_id` registra de quem o usuário recebeu o post (aresta da árvore de propagação). Ausente, vale o autor (nível 1). Regras: usuário e post existem (404); o autor não compartilha o próprio post (422); a origem não é o próprio usuário e é o autor ou alguém que já compartilhou o post (422); repetição do par retorna 422.
 
 **Definido pelo autor:** distribuir o original aos seguidores de quem compartilhou, permitindo a cascata: Ana publica → Bruno recebe → Bruno compartilha → Carla recebe. O autor não recebe o próprio post.
 
@@ -125,7 +125,7 @@ Na composição assíncrona, a validação usa o estado já persistido: duplicat
 
 `GET /posts/:id/propagation-tree`
 
-Retorna as arestas "quem compartilhou de quem" a partir do autor, até 4 níveis, ordenadas por nível e `usuario_id`, com no máximo 1000 arestas (`truncado: true` quando há mais).
+Retorna as arestas "quem compartilhou de quem" a partir do autor, até 4 níveis, ordenadas por nível e `usuario_id`, com no máximo 500 arestas (`truncado: true` quando há mais).
 
 ```json
 {"post_id":"...","autor_id":"...","profundidade_maxima":4,"truncado":false,
@@ -133,7 +133,7 @@ Retorna as arestas "quem compartilhou de quem" a partir do autor, até 4 níveis
 ```
 
 - MySQL: CTE recursiva (`WITH RECURSIVE`) sobre `shares(post_id, source_user_id)`.
-- Neo4j: caminho variável `(u)-[:RESHARED_FROM*1..4]->(autor)` restrito a `r.post_id = $post` em todas as arestas.
+- Neo4j: ancorada em `(:Post {id})` e no autor; caminho variável `(u)-[:RESHARED_FROM*1..4 {post_id: $post}]->(autor)` com `ORDER BY`/`LIMIT` antes de montar a resposta. Índice `reshared_post_id` em `RESHARED_FROM(post_id)`.
 
 Post inexistente retorna 404; UUID malformado, 422. Na composição assíncrona, compartilhamentos ainda na fila não aparecem.
 
@@ -144,7 +144,7 @@ Post inexistente retorna 404; UUID malformado, 422. Na composição assíncrona,
 - Termo ausente, vazio ou só com espaços retorna 422; nenhuma correspondência retorna 200 com lista vazia. Limite de 100 caracteres para termo de usuários e 500 para posts.
 - Buscas e feed usam `{data: [...], proximo_cursor: null|string}`, com até 50 itens por página. Cursor inválido retorna 422. O cursor mantém a posição pela chave de ordenação; novas entradas anteriores ao cursor aparecem ao reiniciar a consulta.
 - Ordenação: buscas por ID crescente; feed por sequência persistida da primeira entrega decrescente, com ID como desempate. Não ordenar aleatoriamente ou depender de ordem implícita do banco.
-- Cada item do feed contém `post`, `origem` (`publicacao` ou `compartilhamento`), `autor_evento_id` e `evento_id`. O cursor codifica a sequência e o ID do último item retornado, sem depender de offsets.
+- Cada item do feed contém `post`, `origem` (`post` ou `share`), `autor_evento_id` e `evento_id`. O cursor codifica a sequência e o ID do último item retornado, sem depender de offsets.
 - Feed de usuário existente sem entradas retorna 200 com lista vazia; usuário inexistente retorna 404.
 - Consultar feed não deve criar associações de distribuição: o experimento solicitado é de fan-out na escrita.
 

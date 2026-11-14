@@ -13,7 +13,7 @@ use App\Infrastructure\Neo4j\Neo4jClient;
 class ShareRepository
 {
     public const TREE_DEPTH = 4;
-    public const TREE_LIMIT = 1000;
+    public const TREE_LIMIT = 500;
 
     public function __construct(private Neo4jClient $client) {}
 
@@ -25,7 +25,6 @@ class ShareRepository
             OPTIONAL MATCH (o:User {id:$source})
             RETURN u IS NOT NULL AS user_exists, p.usuario_id AS author_id,
                 CASE WHEN u IS NULL OR p IS NULL THEN false ELSE exists { (u)-[:SHARED]->(p) } END AS already_shared,
-                CASE WHEN u IS NULL OR p IS NULL THEN false ELSE exists { (u)-[:FEED]->(p) } END AS in_feed,
                 CASE WHEN o IS NULL OR p IS NULL THEN false ELSE exists { (o)-[:SHARED]->(p) } END AS source_shared', [
             'user' => $userId, 'post' => $postId, 'source' => $sourceId ?? '',
         ])[0];
@@ -61,7 +60,7 @@ class ShareRepository
                 WHERE f.id <> p.usuario_id
                 SET f.feed_seq = coalesce(f.feed_seq, 0) + 1
                 MERGE (f)-[e:FEED {key: f.id + ":" + p.id}]->(p)
-                ON CREATE SET e.seq=f.feed_seq, e.origem="compartilhamento",
+                ON CREATE SET e.seq=f.feed_seq, e.origem="share",
                     e.autor_evento_id=s.usuario_id, e.evento_id=s.id
                 RETURN count(f) AS entregas
             }
@@ -69,26 +68,30 @@ class ShareRepository
     }
 
     /**
-     * Árvore de propagação por caminho variável: do autor até TREE_DEPTH saltos de
-     * RESHARED_FROM restritos ao mesmo post. O filtro como mapa de propriedades na relação
-     * ({post_id}) é avaliado DENTRO da expansão (poda); um WHERE all(...) posterior expandia
-     * as arestas de todos os posts do autor antes de filtrar (~20x mais db hits no PROFILE). Cada usuário tem no máximo uma aresta por post
-     * (RESHARED_FROM.key), então existe um único caminho por nó.
+     * Árvore de propagação por caminho variável: ancorada no :Post (índice único) e no autor,
+     * percorre até TREE_DEPTH saltos de RESHARED_FROM restritos ao mesmo post. O filtro como mapa
+     * de propriedades na relação ({post_id}) é avaliado DENTRO da expansão (poda); um WHERE all(...)
+     * posterior expandia as arestas de todos os posts do autor (~20x mais db hits no PROFILE).
+     * Cada usuário tem no máximo uma aresta por post (RESHARED_FROM.key), então há um único
+     * caminho por nó. ORDER BY/LIMIT antes de montar os mapas: a variante com COLLECT {} e RETURN
+     * de mapa custava ~10x mais tempo no PROFILE do post mais compartilhado do dataset.
+     * O LIMIT (TREE_LIMIT + 1) limita o payload de posts super-virais e sinaliza truncamento.
      *
-     * @return list<array{usuario_id:string, origem_usuario_id:string, nivel:int, compartilhamento_id:string, criado_em:string}>|null
+     * @return array{author_id:string, edges:list<array{usuario_id:string, origem_usuario_id:string, nivel:int, compartilhamento_id:string, criado_em:string}>}|null
      */
     public function tree(string $postId): ?array
     {
         $rows = $this->client->run('MATCH (p:Post {id:$post})
             MATCH (a:User {id:p.usuario_id})
-            RETURN p.usuario_id AS author_id, COLLECT {
-                MATCH path = (u:User)-[:RESHARED_FROM*1..'.self::TREE_DEPTH.' {post_id: $post}]->(a)
+            CALL (a) {
+                MATCH path = (u)-[:RESHARED_FROM*1..'.self::TREE_DEPTH.' {post_id: $post}]->(a)
                 WITH u, relationships(path) AS rels
                 WITH u, head(rels) AS edge, size(rels) AS nivel
-                RETURN {usuario_id: u.id, origem_usuario_id: endNode(edge).id, nivel: nivel,
-                    compartilhamento_id: edge.share_id, criado_em: edge.criado_em}
                 ORDER BY nivel, u.id LIMIT $limit
-            } AS edges', ['post' => $postId, 'limit' => self::TREE_LIMIT + 1]);
+                RETURN collect({usuario_id: u.id, origem_usuario_id: endNode(edge).id, nivel: nivel,
+                    compartilhamento_id: edge.share_id, criado_em: edge.criado_em}) AS edges
+            }
+            RETURN a.id AS author_id, edges', ['post' => $postId, 'limit' => self::TREE_LIMIT + 1]);
         return $rows ? $rows[0] : null;
     }
 }

@@ -183,7 +183,7 @@ class SocialApiTest extends TestCase
         $postId = $this->createPost($author->id, 'Validação');
 
         $this->postJson('/posts/'.$postId.'/share', ['usuario_id' => $outsider->id])
-            ->assertUnprocessable(); // post fora do feed
+            ->assertCreated(); // presença no feed não é exigida
 
         $this->postJson('/posts/'.$postId.'/share', ['usuario_id' => $author->id])
             ->assertUnprocessable()->assertJsonPath('erro.codigo', 'validacao');
@@ -494,6 +494,16 @@ class SocialApiTest extends TestCase
         ], '{"nome":"Ana"}')
             ->assertUnsupportedMediaType()
             ->assertJsonPath('erro.codigo', 'tipo_midia_nao_aceito');
+    }
+
+    public function test_empty_body_returns_422(): void
+    {
+        $this->call('POST', '/usuarios', [], [], [], [
+            'CONTENT_TYPE' => 'application/json',
+            'HTTP_ACCEPT' => 'application/json',
+        ], '')
+            ->assertUnprocessable()
+            ->assertJsonPath('erro.codigo', 'validacao');
     }
 
     public function test_malformed_json_returns_400(): void

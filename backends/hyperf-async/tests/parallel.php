@@ -102,8 +102,8 @@ putenv('FEED_PARALLEL=true');
 \Swoole\Coroutine\run(function (): void {
     $client = new CountingClient();
     $client->feedEntries = [
-        ['entry' => ['post' => ['id' => 'p1'], 'origem' => 'publicacao', 'autor_evento_id' => 'a', 'evento_id' => 'e1', 'seq' => 2]],
-        ['entry' => ['post' => ['id' => 'p0'], 'origem' => 'publicacao', 'autor_evento_id' => 'a', 'evento_id' => 'e0', 'seq' => 1]],
+        ['entry' => ['post' => ['id' => 'p1'], 'origem' => 'post', 'autor_evento_id' => 'a', 'evento_id' => 'e1', 'seq' => 2]],
+        ['entry' => ['post' => ['id' => 'p0'], 'origem' => 'post', 'autor_evento_id' => 'a', 'evento_id' => 'e0', 'seq' => 1]],
     ];
     $feed = new FeedRepository($client);
     $entries = $feed->page('reader', null);
