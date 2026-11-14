@@ -262,7 +262,6 @@ NEO4J_SCHEMA = [
     'CREATE CONSTRAINT IF NOT EXISTS FOR ()-[r:VIA]-() REQUIRE r.key IS UNIQUE',
     'CREATE INDEX task_pending IF NOT EXISTS FOR (n:Task) ON (n.published, n.done)',
     'CREATE INDEX follows_target_follower IF NOT EXISTS FOR ()-[f:FOLLOWS]-() ON (f.seguido_id, f.seguidor_id)',
-    'CREATE INDEX reshared_post_id IF NOT EXISTS FOR ()-[r:RESHARED_FROM]-() ON (r.post_id)',
     'CALL db.awaitIndexes(300)',
 ]
 

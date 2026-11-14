@@ -6,7 +6,8 @@
 #   scripts/viral.sh restore  sync|async     recria o volume a partir do tar e sobe o ambiente
 #   scripts/viral.sh down     sync|async     derruba o ambiente (remove volumes do projeto)
 #   scripts/viral.sh obs up|down             Prometheus + Grafana + cAdvisor
-#   MODE=smoke|tcc scripts/viral.sh load sync|async
+#   scripts/viral.sh warmup   sync|async     aquecimento só de leitura (GET), fora da medição
+#   MODE=smoke|tcc scripts/viral.sh load sync|async   (roda warmup antes; WARMUP=0 desliga)
 #
 # Opera somente nos projetos Compose tcc-viral-sync e tcc-viral-async.
 set -euo pipefail
@@ -122,10 +123,27 @@ cmd_obs() {
     $([ "${1:-up}" = up ] && echo "-d --wait")
 }
 
+port_of() { [ "$1" = sync ] && echo "$SYNC_PORT" || echo "$ASYNC_PORT"; }
+
+# Mesmo procedimento nas duas arquiteturas: uma passada de GETs (árvores virais + feeds).
+# Sem remote write: não entra nas séries do Prometheus/Grafana da carga medida.
+cmd_warmup() {
+  local arch="$1" out
+  require_dataset
+  out="$ROOT/code/k6/results/viral-$arch-warmup-$(date -u +%Y%m%dT%H%M%SZ)"
+  mkdir -p "$out"
+  log "k6 $arch MODE=warmup -> $out"
+  MODE=warmup ARCH="$arch" BASE_URL="http://127.0.0.1:$(port_of "$arch")" \
+    DATASET="$DATASET/k6/dataset.json" \
+    k6 run --tag "arch=$arch" --tag "mode=warmup" \
+      --summary-export "$out/summary.json" "$ROOT/code/k6/viral.js" 2>&1 | tee "$out/output.log"
+}
+
 cmd_load() {
   local arch="$1" port metrics_url out
   require_dataset
-  port=$([ "$arch" = sync ] && echo "$SYNC_PORT" || echo "$ASYNC_PORT")
+  [ "${WARMUP:-1}" = 0 ] || cmd_warmup "$arch"
+  port="$(port_of "$arch")"
   metrics_url=""
   [ "$arch" = async ] && metrics_url="http://127.0.0.1:${RABBITMQ_METRICS_PORT:-15692}/metrics/per-object"
   out="$ROOT/code/k6/results/viral-$arch-${MODE:-smoke}-$(date -u +%Y%m%dT%H%M%SZ)"
@@ -148,9 +166,10 @@ cmd_load() {
 case "${1:-}" in
   dataset) shift; cmd_dataset "$@" ;;
   snapshot) cmd_snapshot "${2:?sync|async}" ;;
+  warmup) cmd_warmup "${2:?sync|async}" ;;
   restore) cmd_restore "${2:?sync|async}" ;;
   down) cmd_down "${2:?sync|async}" ;;
   obs) cmd_obs "${2:-up}" ;;
   load) cmd_load "${2:?sync|async}" ;;
-  *) sed -n '2,12p' "$0"; exit 1 ;;
+  *) sed -n '2,13p' "$0"; exit 1 ;;
 esac

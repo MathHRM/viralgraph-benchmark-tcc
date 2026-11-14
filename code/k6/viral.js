@@ -2,6 +2,8 @@
 //
 //   MODE=smoke  30 s, 50 VUs constantes: valida rotas (sem 5xx) e coleta de métricas.
 //   MODE=tcc    rampa até VUS_MAX (padrão 600) em ~8 min: coleta para a monografia.
+//   MODE=warmup aquecimento só de leitura após o restore (fora da medição): uma passada pelas
+//               árvores de todos os posts virais e pelos feeds de todos os usuários comuns.
 //
 // Mistura por iteração:
 //   70% leitura   feed de usuário comum | árvore de propagação de post viral (Zipf no ranking)
@@ -9,9 +11,10 @@
 //    5% celebridade publica (fan-out 2000+ seguidores)
 //
 // Env: BASE_URL, ARCH=sync|async, DATASET (k6/dataset.json), RABBITMQ_METRICS_URL (opcional),
-//      VUS_MAX, THINK_MIN_MS, THINK_MAX_MS, ZIPF_S.
+//      VUS_MAX, THINK_MIN_MS, THINK_MAX_MS, ZIPF_S, WARMUP_VUS.
 import http from 'k6/http';
 import { check, sleep } from 'k6';
+import { scenario } from 'k6/execution';
 import { SharedArray } from 'k6/data';
 import { Counter, Gauge, Rate } from 'k6/metrics';
 
@@ -23,7 +26,8 @@ const VUS_MAX = parseInt(__ENV.VUS_MAX || '600', 10);
 const THINK_MIN = parseInt(__ENV.THINK_MIN_MS || '50', 10);
 const THINK_MAX = parseInt(__ENV.THINK_MAX_MS || '250', 10);
 const ZIPF_S = parseFloat(__ENV.ZIPF_S || '1.1');
-if (!['smoke', 'tcc'].includes(MODE)) throw new Error(`MODE inválido: ${MODE}`);
+const WARMUP_VUS = parseInt(__ENV.WARMUP_VUS || '10', 10);
+if (!['smoke', 'tcc', 'warmup'].includes(MODE)) throw new Error(`MODE inválido: ${MODE}`);
 if (!['sync', 'async'].includes(ARCH)) throw new Error(`ARCH inválido: ${ARCH}`);
 
 // Sync confirma persistência (201); async confirma só a aceitação no broker (202).
@@ -44,7 +48,13 @@ const queueDepth = new Gauge('rabbitmq_queue_depth');
 const businessOk = new Rate('business_ok');
 
 const ROUTES = ['feed', 'propagation_tree', 'posts_create', 'share', 'celebrity_post'];
-const thresholds = {
+const thresholds = MODE === 'warmup' ? {
+  // Só para o resumo imprimir p50/p95/p99 por rota; o aquecimento não reprova.
+  'http_req_duration{name:feed}': ['p(99)>=0'],
+  'http_req_duration{name:propagation_tree}': ['p(99)>=0'],
+  http_5xx: ['count>=0'],
+  http_timeouts: ['count>=0'],
+} : {
   // Smoke reprova só com 5xx (rota quebrada). Saturação (timeouts, latência) é resultado, não erro.
   'http_req_failed{scenario:traffic}': ['rate>=0'],
   http_5xx: MODE === 'smoke' ? ['count==0'] : ['count>=0'],
@@ -52,7 +62,7 @@ const thresholds = {
   business_ok: ['rate>=0'],
 };
 // Thresholds sempre verdadeiros só para o resumo imprimir p50/p95/p99 e erro por rota.
-for (const route of ROUTES) {
+for (const route of MODE === 'warmup' ? [] : ROUTES) {
   thresholds[`http_req_duration{name:${route}}`] = ['p(99)>=0'];
   thresholds[`http_req_failed{name:${route}}`] = ['rate>=0'];
 }
@@ -70,8 +80,13 @@ const trafficScenario = MODE === 'smoke'
     ],
   };
 
-const scenarios = { traffic: trafficScenario };
-if (QUEUE_URL) {
+// Aquecimento: cada iteração lê um item fixo (árvores virais primeiro, depois feeds), sem repetição.
+const WARMUP_ITERATIONS = viralPosts.length + commonUsers.length;
+const scenarios = MODE === 'warmup'
+  ? { warmup: { executor: 'shared-iterations', exec: 'warmup', vus: WARMUP_VUS,
+      iterations: WARMUP_ITERATIONS, maxDuration: '30m' } }
+  : { traffic: trafficScenario };
+if (QUEUE_URL && MODE !== 'warmup') {
   for (const queue of ['posts', 'distribution', 'shares']) {
     thresholds[`rabbitmq_queue_depth{queue:${queue}}`] = ['value>=0'];
   }
@@ -171,6 +186,16 @@ export function traffic() {
   }
   actions.add(1, { kind });
   sleep((THINK_MIN + Math.random() * (THINK_MAX - THINK_MIN)) / 1000);
+}
+
+// Só GET: aquece page cache/buffer pool e workers sem alterar o estado restaurado do snapshot.
+export function warmup() {
+  const i = scenario.iterationInTest;
+  if (i < viralPosts.length) {
+    call('GET', `/posts/${viralPosts[i].id}/propagation-tree`, null, 'propagation_tree', [200]);
+  } else {
+    call('GET', `/feed/${commonUsers[i - viralPosts.length]}`, null, 'feed', [200]);
+  }
 }
 
 // Lê o endpoint Prometheus do RabbitMQ e publica a profundidade das filas como métrica do k6.
