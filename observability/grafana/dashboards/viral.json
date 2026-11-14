@@ -1,0 +1,303 @@
+{
+ "uid": "tcc-viral",
+ "title": "TCC - Viraliza\u00e7\u00e3o",
+ "schemaVersion": 39,
+ "refresh": "5s",
+ "time": {
+  "from": "now-15m",
+  "to": "now"
+ },
+ "templating": {
+  "list": [
+   {
+    "name": "arch",
+    "type": "custom",
+    "query": "sync,async",
+    "multi": true,
+    "includeAll": true,
+    "current": {
+     "text": "All",
+     "value": "$__all"
+    },
+    "options": []
+   }
+  ]
+ },
+ "panels": [
+  {
+   "type": "timeseries",
+   "title": "p50 por rota",
+   "datasource": {
+    "type": "prometheus",
+    "uid": "prometheus"
+   },
+   "gridPos": {
+    "x": 0,
+    "y": 0,
+    "w": 8,
+    "h": 8
+   },
+   "fieldConfig": {
+    "defaults": {
+     "unit": "s"
+    },
+    "overrides": []
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "expr": "k6_http_req_duration_p50{arch=~\"$arch\",scenario=\"traffic\"}",
+     "legendFormat": "{{arch}} {{name}}"
+    }
+   ]
+  },
+  {
+   "type": "timeseries",
+   "title": "p95 por rota",
+   "datasource": {
+    "type": "prometheus",
+    "uid": "prometheus"
+   },
+   "gridPos": {
+    "x": 8,
+    "y": 0,
+    "w": 8,
+    "h": 8
+   },
+   "fieldConfig": {
+    "defaults": {
+     "unit": "s"
+    },
+    "overrides": []
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "expr": "k6_http_req_duration_p95{arch=~\"$arch\",scenario=\"traffic\"}",
+     "legendFormat": "{{arch}} {{name}}"
+    }
+   ]
+  },
+  {
+   "type": "timeseries",
+   "title": "p99 por rota",
+   "datasource": {
+    "type": "prometheus",
+    "uid": "prometheus"
+   },
+   "gridPos": {
+    "x": 16,
+    "y": 0,
+    "w": 8,
+    "h": 8
+   },
+   "fieldConfig": {
+    "defaults": {
+     "unit": "s"
+    },
+    "overrides": []
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "expr": "k6_http_req_duration_p99{arch=~\"$arch\",scenario=\"traffic\"}",
+     "legendFormat": "{{arch}} {{name}}"
+    }
+   ]
+  },
+  {
+   "type": "timeseries",
+   "title": "Taxa de erro HTTP",
+   "datasource": {
+    "type": "prometheus",
+    "uid": "prometheus"
+   },
+   "gridPos": {
+    "x": 0,
+    "y": 8,
+    "w": 8,
+    "h": 8
+   },
+   "fieldConfig": {
+    "defaults": {
+     "unit": "percentunit"
+    },
+    "overrides": []
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "expr": "k6_http_req_failed_rate{arch=~\"$arch\",scenario=\"traffic\"}",
+     "legendFormat": "{{arch}} {{name}}"
+    }
+   ]
+  },
+  {
+   "type": "timeseries",
+   "title": "Requisi\u00e7\u00f5es/s",
+   "datasource": {
+    "type": "prometheus",
+    "uid": "prometheus"
+   },
+   "gridPos": {
+    "x": 8,
+    "y": 8,
+    "w": 8,
+    "h": 8
+   },
+   "fieldConfig": {
+    "defaults": {
+     "unit": "reqps"
+    },
+    "overrides": []
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "expr": "sum by (arch, name) (rate(k6_http_reqs_total{arch=~\"$arch\",scenario=\"traffic\"}[10s]))",
+     "legendFormat": "{{arch}} {{name}}"
+    }
+   ]
+  },
+  {
+   "type": "timeseries",
+   "title": "VUs",
+   "datasource": {
+    "type": "prometheus",
+    "uid": "prometheus"
+   },
+   "gridPos": {
+    "x": 16,
+    "y": 8,
+    "w": 8,
+    "h": 8
+   },
+   "fieldConfig": {
+    "defaults": {
+     "unit": "short"
+    },
+    "overrides": []
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "expr": "k6_vus{arch=~\"$arch\"}",
+     "legendFormat": "{{arch}}"
+    }
+   ]
+  },
+  {
+   "type": "timeseries",
+   "title": "Fila RabbitMQ (mensagens)",
+   "datasource": {
+    "type": "prometheus",
+    "uid": "prometheus"
+   },
+   "gridPos": {
+    "x": 0,
+    "y": 16,
+    "w": 12,
+    "h": 8
+   },
+   "fieldConfig": {
+    "defaults": {
+     "unit": "short"
+    },
+    "overrides": []
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "expr": "rabbitmq_queue_messages",
+     "legendFormat": "{{queue}}"
+    },
+    {
+     "refId": "B",
+     "expr": "rabbitmq_queue_messages_unacked",
+     "legendFormat": "{{queue}} unacked"
+    }
+   ]
+  },
+  {
+   "type": "timeseries",
+   "title": "Fila (amostrada pelo k6)",
+   "datasource": {
+    "type": "prometheus",
+    "uid": "prometheus"
+   },
+   "gridPos": {
+    "x": 12,
+    "y": 16,
+    "w": 12,
+    "h": 8
+   },
+   "fieldConfig": {
+    "defaults": {
+     "unit": "short"
+    },
+    "overrides": []
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "expr": "k6_rabbitmq_queue_depth",
+     "legendFormat": "{{queue}}"
+    }
+   ]
+  },
+  {
+   "type": "timeseries",
+   "title": "CPU por container",
+   "datasource": {
+    "type": "prometheus",
+    "uid": "prometheus"
+   },
+   "gridPos": {
+    "x": 0,
+    "y": 24,
+    "w": 12,
+    "h": 8
+   },
+   "fieldConfig": {
+    "defaults": {
+     "unit": "short"
+    },
+    "overrides": []
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "expr": "sum by (container_label_com_docker_compose_service, container_label_com_docker_compose_project) (rate(container_cpu_usage_seconds_total{container_label_com_docker_compose_project=~\"tcc-viral-.*\"}[10s]))",
+     "legendFormat": "{{container_label_com_docker_compose_project}} {{container_label_com_docker_compose_service}}"
+    }
+   ]
+  },
+  {
+   "type": "timeseries",
+   "title": "Mem\u00f3ria por container",
+   "datasource": {
+    "type": "prometheus",
+    "uid": "prometheus"
+   },
+   "gridPos": {
+    "x": 12,
+    "y": 24,
+    "w": 12,
+    "h": 8
+   },
+   "fieldConfig": {
+    "defaults": {
+     "unit": "bytes"
+    },
+    "overrides": []
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "expr": "sum by (container_label_com_docker_compose_service, container_label_com_docker_compose_project) (container_memory_working_set_bytes{container_label_com_docker_compose_project=~\"tcc-viral-.*\"})",
+     "legendFormat": "{{container_label_com_docker_compose_project}} {{container_label_com_docker_compose_service}}"
+    }
+   ]
+  }
+ ]
+}

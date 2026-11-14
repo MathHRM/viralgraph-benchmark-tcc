@@ -79,7 +79,8 @@ class Fixture(BaseHTTPRequestHandler):
                 state['posts'][identifier] = data
                 self.deliver(body['usuario_id'], data, 'publicacao', identifier)
                 location = f'/posts/{identifier}'
-            elif self.path == '/compartilhar-post':
+            elif self.path.startswith('/posts/') and self.path.endswith('/share'):
+                body['post_id'] = self.path.split('/')[2]
                 pair = (body['usuario_id'], body['post_id'])
                 if pair in state['shares'] or body['post_id'] not in state['feeds'][body['usuario_id']]:
                     return self.reply(422, {})

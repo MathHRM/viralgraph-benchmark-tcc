@@ -5,6 +5,8 @@ import { Counter, Trend } from 'k6/metrics';
 
 const config = JSON.parse(open(__ENV.CONFIG));
 const base = __ENV.BASE_URL.replace(/\/$/, '');
+// POST /posts/{id}/share: sync confirma persistência (201); async confirma aceitação no broker (202).
+const shareStatus = __ENV.ARCHITECTURE === 'async' ? 202 : 201;
 const latency = new Trend('request_latency', true);
 const started = new Counter('actions_started');
 const completed = new Counter('actions_completed');
@@ -206,7 +208,7 @@ export function social(data) {
           if (choose(index, i + 10) >= config.share_fraction) break;
           const user = receivers[i];
           if (!waitForPost(user, post)) break;
-          if (!request('POST', '/compartilhar-post', { usuario_id: user, post_id: post }, 'compartilhar', 201).passed) break;
+          if (!request('POST', `/posts/${post}/share`, { usuario_id: user }, 'compartilhar', shareStatus).passed) break;
         }
       }
     }

@@ -6,46 +6,58 @@ namespace App\Repositories;
 
 use App\Models\FeedItem;
 use Illuminate\Database\Query\Builder;
-use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class FeedItemRepository
 {
+    /** Destinatários por comando: limita o tamanho dos IN/INSERT multi-linha. */
+    public const FAN_OUT_CHUNK = 500;
+
     /**
-     * Insert one feed association. The unique (user_id, post_id) constraint
-     * makes duplicate deliveries a no-op under concurrent fan-out.
+     * Fan-out síncrono em lotes, dentro da transação do chamador. Por lote:
+     * 1. UPDATE único reserva a próxima seq de cada destinatário (trava as linhas em ordem de PK,
+     *    o que reduz deadlocks entre fan-outs concorrentes que compartilham seguidores);
+     * 2. SELECT lê as seqs reservadas;
+     * 3. INSERT IGNORE multi-linha: UNIQUE (user_id, post_id) torna reentregas um no-op,
+     *    preservando procedência e posição da primeira entrega. Seq pode ficar com lacunas.
+     *
+     * @param  list<string>  $recipientIds  ordenados por id
+     * @return int entradas efetivamente criadas
      */
-    public function insertIfAbsent(
-        string $userId,
+    public function fanOut(
+        array $recipientIds,
         string $postId,
         string $origin,
         string $eventAuthorId,
         string $eventId,
-    ): bool {
-        try {
-            $current = DB::table('users')->where('id', $userId)->lockForUpdate()->value('feed_seq');
-            if ($current === null) {
-                return false;
+    ): int {
+        $inserted = 0;
+        foreach (array_chunk($recipientIds, self::FAN_OUT_CHUNK) as $chunk) {
+            DB::table('users')->whereIn('id', $chunk)->increment('feed_seq');
+            $seqs = DB::table('users')->whereIn('id', $chunk)->pluck('feed_seq', 'id');
+            $rows = [];
+            foreach ($chunk as $userId) {
+                if (! isset($seqs[$userId])) {
+                    continue;
+                }
+                $rows[] = [
+                    'id' => (string) Str::uuid7(),
+                    'user_id' => $userId,
+                    'post_id' => $postId,
+                    'origin' => $origin,
+                    'event_author_id' => $eventAuthorId,
+                    'event_id' => $eventId,
+                    'seq' => (int) $seqs[$userId],
+                ];
             }
-            $seq = (int) $current + 1;
-            DB::table('users')->where('id', $userId)->update(['feed_seq' => $seq]);
-
-            FeedItem::query()->create([
-                'id' => (string) Str::uuid7(),
-                'user_id' => $userId,
-                'post_id' => $postId,
-                'origin' => $origin,
-                'event_author_id' => $eventAuthorId,
-                'event_id' => $eventId,
-                'seq' => $seq,
-            ]);
-
-            return true;
-        } catch (UniqueConstraintViolationException) {
-            return false;
+            if ($rows !== []) {
+                $inserted += DB::table('feed_items')->insertOrIgnore($rows);
+            }
         }
+
+        return $inserted;
     }
 
     public function contains(string $userId, string $postId): bool

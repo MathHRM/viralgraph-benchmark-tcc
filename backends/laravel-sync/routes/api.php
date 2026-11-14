@@ -16,6 +16,7 @@ Route::get('/usuarios', [UserController::class, 'search']);
 Route::get('/usuarios/{id}', [UserController::class, 'show']);
 Route::get('/posts', [PostController::class, 'search']);
 Route::get('/posts/{id}', [PostController::class, 'show']);
+Route::get('/posts/{id}/propagation-tree', [ShareController::class, 'propagationTree']);
 Route::get('/feed/{id}', [FeedController::class, 'index']);
 Route::get('/metricas', [MetricsController::class, 'index']);
 
@@ -23,11 +24,11 @@ Route::middleware(EnsureJsonApiRequest::class)->group(function (): void {
     Route::post('/usuarios', [UserController::class, 'create']);
     Route::post('/seguir-usuario', [FollowController::class, 'create']);
     Route::post('/posts', [PostController::class, 'create']);
-    Route::post('/compartilhar-post', [ShareController::class, 'create']);
+    Route::post('/posts/{id}/share', [ShareController::class, 'create']);
 });
 
 // Preserva o 404 histórico destas combinações; outros métodos continuam retornando 405.
-foreach (['/seguir-usuario', '/compartilhar-post'] as $path) {
+foreach (['/seguir-usuario', '/posts/{id}/share'] as $path) {
     Route::get($path, [NotFoundController::class, 'index']);
 }
 foreach (['/usuarios/{id}', '/posts/{id}', '/feed/{id}', '/metricas'] as $path) {

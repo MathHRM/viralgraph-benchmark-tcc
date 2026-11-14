@@ -9,6 +9,8 @@ use App\Repository\DistributionTaskRepository;
 use App\Worker\PostBatchProcessor;
 use App\Worker\OutboxPublisher;
 use App\Worker\FeedDistributor;
+use App\Worker\ShareBatchProcessor;
+use App\Repository\ShareRepository;
 use PhpAmqpLib\Message\AMQPMessage;
 
 function check(bool $condition): void {
@@ -76,4 +78,31 @@ check(!$distribution->acked && $distribution->requeued); // Fatia ou encerrament
 $client->rows = [['done' => true]];
 $feeds->process($distribution, 100, fn () => true);
 check($distribution->acked);
+// Lote de compartilhamentos: uma transação UNWIND; falha divide o lote e só a mensagem ruim fica sem ACK.
+final class FlakyShares extends ShareRepository {
+    public array $calls = [];
+    public function __construct() {}
+    public function persistBatch(array $shares): array {
+        $this->calls[] = array_column($shares, 'id');
+        if (in_array('bad', array_column($shares, 'id'), true)) { throw new RuntimeException('timeout'); }
+        return [];
+    }
+}
+$shareMessage = fn (string $id) => new class(json_encode(['id' => $id])) extends AMQPMessage {
+    public int $acks = 0;
+    public ?bool $requeue = null;
+    public function ack($multiple = false): void { $this->acks++; }
+    public function nack($requeue = false, $multiple = false): void { $this->requeue = $requeue; }
+};
+$flaky = new FlakyShares();
+$batchMessages = array_map($shareMessage, ['a', 'b', 'bad', 'c']);
+$corrupt = new class('{') extends AMQPMessage {
+    public ?bool $requeue = null;
+    public function nack($requeue = false, $multiple = false): void { $this->requeue = $requeue; }
+};
+$failed = (new ShareBatchProcessor($flaky))->process([...$batchMessages, $corrupt]);
+check($flaky->calls[0] === ['a', 'b', 'bad', 'c']);
+check($failed === [$batchMessages[2]] && $batchMessages[2]->acks === 0);
+check($batchMessages[0]->acks === 1 && $batchMessages[1]->acks === 1 && $batchMessages[3]->acks === 1);
+check($corrupt->requeue === false);
 echo "ACK após commit, outbox após confirmação e retomada de distribuição: OK\n";

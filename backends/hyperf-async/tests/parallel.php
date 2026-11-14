@@ -5,8 +5,7 @@ require dirname(__DIR__).'/vendor/autoload.php';
 use App\Exception\ApiError;
 use App\Infrastructure\Neo4j\Neo4jClient;
 use App\Infrastructure\Neo4j\Neo4jPool;
-use App\Repository\{UserRepository, PostRepository, ShareRepository, FeedRepository};
-use App\Service\ShareService;
+use App\Repository\FeedRepository;
 use Hyperf\Coroutine\Parallel;
 
 function check(bool $condition, string $message = 'Invariante do pool/paralelismo violada.'): void {
@@ -94,38 +93,7 @@ $noop->release();
 check($noop->available() === 1, 'Fora de corrotina o pool não deve alterar as permissões.');
 echo "Pool: padrão 32 e no-op fora de corrotina: OK\n";
 
-// ---------------------------------------------------------------------------
-// 2. ShareService: validações independentes rodam em paralelo dentro de corrotina.
-// ---------------------------------------------------------------------------
-\Swoole\Coroutine\run(function (): void {
-    $client = new CountingClient();
-    $share = new ShareService(new UserRepository($client), new PostRepository($client), new ShareRepository($client));
-    $result = $share->create(['usuario_id' => 'reader', 'post_id' => 'post']);
-    check($result['usuario_id'] === 'reader' && isset($result['id'], $result['criado_em']), 'Resultado do compartilhamento inválido.');
-    check($client->maxInFlight === 2, 'As duas validações não rodaram em paralelo: '.$client->maxInFlight);
-});
-echo "ShareService: validações de usuário e post em paralelo: OK\n";
-
-// Precedência do erro preservada: usuário ausente vence o post ausente (404 do usuário).
-\Swoole\Coroutine\run(function (): void {
-    $client = new CountingClient();
-    $client->userMissing = true;
-    $client->postMissing = true;
-    $share = new ShareService(new UserRepository($client), new PostRepository($client), new ShareRepository($client));
-    invalid(fn () => $share->create(['usuario_id' => 'ghost', 'post_id' => 'ghost-post']), 404);
-
-    // Só o post ausente também resulta em 404.
-    $client2 = new CountingClient();
-    $client2->postMissing = true;
-    $share2 = new ShareService(new UserRepository($client2), new PostRepository($client2), new ShareRepository($client2));
-    invalid(fn () => $share2->create(['usuario_id' => 'reader', 'post_id' => 'ghost']), 404);
-
-    // Regra do próprio post permanece 422.
-    $client3 = new CountingClient();
-    $share3 = new ShareService(new UserRepository($client3), new PostRepository($client3), new ShareRepository($client3));
-    invalid(fn () => $share3->create(['usuario_id' => 'author', 'post_id' => 'post']), 422);
-});
-echo "ShareService: precedência 404 (usuário antes do post) e regra do próprio post: OK\n";
+// 2. ShareService: validação passou a ser uma única consulta Cypher (ver tests/services.php).
 
 // ---------------------------------------------------------------------------
 // 3. FeedRepository paralelo: existência + página simultâneas, saída idêntica ao contrato.
@@ -151,4 +119,4 @@ putenv('FEED_PARALLEL=true');
 putenv('FEED_PARALLEL');
 echo "FeedRepository: split paralelo com saída idêntica e 404 de usuário inexistente: OK\n";
 
-echo "Pool e paralelismo (ShareService, FeedRepository): OK\n";
+echo "Pool e paralelismo (FeedRepository): OK\n";

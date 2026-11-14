@@ -7,6 +7,7 @@ namespace App\Infrastructure\Neo4j;
  *   (:User)-[:FOLLOWS]->(:User)      relação de seguir
  *   (:User)-[:AUTHORED]->(:Post)     autoria
  *   (:User)-[:SHARED]->(:Post)       compartilhamento
+ *   (:User)-[:RESHARED_FROM]->(:User) aresta da árvore de propagação (post_id)
  *   (:User)-[:FEED]->(:Post)         entrada de feed (primeira entrega)
  *   (:User)-[:VIA]->(:Post)          cada caminho de entrega (auditoria)
  *   (:Task)                          outbox de distribuição
@@ -24,6 +25,7 @@ final class SchemaInitializer
     private const RELATIONSHIP_UNIQUE = [
         'FOLLOWS' => 'key', // seguidor:seguido
         'SHARED' => 'key',  // usuario:post
+        'RESHARED_FROM' => 'key', // usuario:post (um pai por nó da árvore)
         'FEED' => 'key',    // destinatario:post
         'VIA' => 'key',     // destinatario:post:evento
     ];

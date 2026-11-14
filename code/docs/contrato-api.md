@@ -37,7 +37,8 @@ Cada composição terá duas instâncias HTTP atrás de Nginx em Docker Compose.
 | `POST /seguir-usuario` | Seguir outro usuário | `seguidor_id`, `seguido_id` |
 | `GET /usuarios?s=:termo` | Buscar usuários | — |
 | `POST /posts` | Criar post de um usuário | `usuario_id`, `conteudo` |
-| `POST /compartilhar-post` | Compartilhar post original | `usuario_id`, `post_id` |
+| `POST /posts/:id/share` | Compartilhar post original (árvore de propagação) | `usuario_id`; opcional `origem_usuario_id` |
+| `GET /posts/:id/propagation-tree` | Árvore de propagação até 4 níveis | — |
 | `GET /posts?c=:termo` | Buscar posts por conteúdo | — |
 | `GET /posts/:id` | Consultar post original | — |
 | `GET /feed/:usuario_id` | Consultar feed do usuário | — |
@@ -99,23 +100,42 @@ Fan-out na escrita significa materializar uma associação entre o post e o feed
 
 ## Compartilhamento e cascata
 
-`POST /compartilhar-post`
+`POST /posts/:id/share` (substitui `POST /compartilhar-post`, removido em 2026-11-13)
 
 ```json
-{"usuario_id":"3f940884-7050-4ab5-891f-3398b29a8528","post_id":"184f6fa5-cb20-4c8c-925b-2d6de13b58bf"}
+{"usuario_id":"3f940884-7050-4ab5-891f-3398b29a8528","origem_usuario_id":"ec82e490-492a-4aeb-b7bc-77640f5c2f90"}
 ```
 
 Um post pode ser compartilhado por vários usuários, mas cada par `(usuario_id, post_id)` só pode ser registrado uma vez. Compartilhar não cria outro post original nem duplica seu conteúdo.
 
-**Definido pelo autor:** distribuir o original aos seguidores de quem compartilhou, permitindo a cascata: Ana publica → Bruno recebe → Bruno compartilha → Carla recebe.
+`origem_usuario_id` registra de quem o usuário recebeu o post (aresta da árvore de propagação). Ausente, vale o autor (nível 1). Regras: usuário e post existem (404); o autor não compartilha o próprio post (422); o post precisa estar no feed de quem compartilha (422); a origem não é o próprio usuário e é o autor ou alguém que já compartilhou o post (422); repetição do par retorna 422.
 
-**Definido pelo autor:** Bruno espera o post aparecer no feed e envia `POST /compartilhar-post`. O autor não pode compartilhar o próprio post.
+**Definido pelo autor:** distribuir o original aos seguidores de quem compartilhou, permitindo a cascata: Ana publica → Bruno recebe → Bruno compartilha → Carla recebe. O autor não recebe o próprio post.
 
-A validade é verificada no corte final da execução: o compartilhamento precisa estar persistido e ter o post no feed do usuário.
+| Composição | Resposta | Momento da persistência |
+| --- | --- | --- |
+| Laravel/MySQL | `201` com `{id, usuario_id, post_id, origem_usuario_id, criado_em}` | Na própria requisição: registro do compartilhamento e fan-out aos seguidores em uma transação, com `INSERT IGNORE` multi-linha em lotes de 500 destinatários |
+| Hyperf/Neo4j | `202` com a mesma representação | Após confirmação do RabbitMQ (fila `shares`); um consumer em corrotina (prefetch 50) grava o lote em uma transação Cypher (`UNWIND`) com `SHARED`, `RESHARED_FROM` e as arestas `FEED` |
 
-Compartilhamentos sem presença válida no feed no corte não entram na contagem válida. Entregas e desdobramentos cuja única origem seja esse compartilhamento inválido também não entram; uma entrega com outro caminho válido continua contando uma única vez. Essa verificação não exige criar estados intermediários nos recursos.
+Na composição assíncrona, a validação usa o estado já persistido: duplicatas concorrentes ainda na fila podem receber 202, e o consumer persiste um único compartilhamento por par (chave única), sem nova distribuição.
 
-**Definido pelo autor:** no máximo uma entrada por `(destinatario_id, post_id)` no feed, mesmo quando o destinatário recebe por múltiplos caminhos. Novo caminho não cria uma segunda entrada. Procedência e posição são fixadas pela primeira entrega gravada no banco. Uma sequência persistida ordena as entregas; caminhos posteriores preservam origem e posição e ficam registrados apenas como evidência para auditoria.
+**Definido pelo autor:** no máximo uma entrada por `(destinatario_id, post_id)` no feed, mesmo quando o destinatário recebe por múltiplos caminhos. Novo caminho não cria uma segunda entrada. Procedência e posição são fixadas pela primeira entrega gravada no banco.
+
+## Árvore de propagação
+
+`GET /posts/:id/propagation-tree`
+
+Retorna as arestas "quem compartilhou de quem" a partir do autor, até 4 níveis, ordenadas por nível e `usuario_id`, com no máximo 1000 arestas (`truncado: true` quando há mais).
+
+```json
+{"post_id":"...","autor_id":"...","profundidade_maxima":4,"truncado":false,
+ "data":[{"usuario_id":"...","origem_usuario_id":"...","nivel":1,"compartilhamento_id":"...","criado_em":"2026-11-01T14:21:01+00:00"}]}
+```
+
+- MySQL: CTE recursiva (`WITH RECURSIVE`) sobre `shares(post_id, source_user_id)`.
+- Neo4j: caminho variável `(u)-[:RESHARED_FROM*1..4]->(autor)` restrito a `r.post_id = $post` em todas as arestas.
+
+Post inexistente retorna 404; UUID malformado, 422. Na composição assíncrona, compartilhamentos ainda na fila não aparecem.
 
 ## Consultas, buscas e feed
 
@@ -188,6 +208,6 @@ Não há aprovações pendentes deste contrato. Parâmetros de carga e prazo sã
 
 ## Aceitação assíncrona de posts
 
-Na composição Hyperf, apenas `POST /posts` responde `201`, `{ "id": "<uuid>" }` e `Location` após confirmação da publicação persistente pelo RabbitMQ, antes da persistência do recurso no Neo4j. Durante esse intervalo, `GET /posts/:id` retorna `404`. Trata-se da decisão explícita deste benchmark, sem substituir 201 por 202. O autor é validado antes da publicação; falha operacional retorna 5xx. Usuários, relações e compartilhamentos são validados e persistidos antes do 201.
+Na composição Hyperf, `POST /posts` responde `201`, `{ "id": "<uuid>" }` e `Location` após confirmação da publicação persistente pelo RabbitMQ, antes da persistência do recurso no Neo4j. Durante esse intervalo, `GET /posts/:id` retorna `404`. Trata-se da decisão explícita deste benchmark, sem substituir 201 por 202. O autor é validado antes da publicação; falha operacional retorna 5xx. Usuários e relações são validados e persistidos antes do 201. `POST /posts/:id/share` responde `202` (ver Compartilhamento e cascata).
 
-O critério do k6 permanece inalterado: uma única leitura após 1–30 ms deve retornar 200. A aceitação assíncrona pode falhar nesse critério. Compartilhamentos exigem entrada já materializada no feed; a auditoria do corte final continua obrigatória e pendente de integração.
+O critério do k6 permanece inalterado: uma única leitura após 1–30 ms deve retornar 200. A aceitação assíncrona pode falhar nesse critério. A auditoria do corte final continua obrigatória e pendente de integração.

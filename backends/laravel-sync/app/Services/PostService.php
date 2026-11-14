@@ -32,19 +32,9 @@ class PostService
         return DB::transaction(function () use ($userId, $content): Post {
             $post = $this->posts->create($userId, $content);
 
-            foreach ($this->follows->followerIdsOf($userId) as $followerId) {
-                if ($followerId === $userId) {
-                    continue;
-                }
-
-                $this->feedItems->insertIfAbsent(
-                    $followerId,
-                    $post->id,
-                    'post',
-                    $userId,
-                    $post->id,
-                );
-            }
+            $recipients = $this->follows->followerIdsOf($userId)
+                ->reject(fn (string $id): bool => $id === $userId)->values()->all();
+            $this->feedItems->fanOut($recipients, $post->id, 'post', $userId, $post->id);
 
             return $post;
         }, 3);

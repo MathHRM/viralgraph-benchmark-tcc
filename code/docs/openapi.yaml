@@ -340,33 +340,40 @@ paths:
         schema:
           $ref: '#/components/schemas/UUID'
         description: UUID do recurso; malformado retorna 422.
-  /compartilhar-post:
+  /posts/{id}/share:
     post:
       operationId: compartilharPost
-      summary: Compartilhar original e distribuir aos seguidores
+      summary: Compartilhar original, registrar a aresta da árvore e distribuir aos seguidores
       tags:
       - Compartilhamentos
       description: |-
-        `POST /compartilhar-post`
+        Substitui `POST /compartilhar-post` (removido). Ver `contrato-api.md`, seção "Compartilhamento e cascata".
 
-        ```json
-        {"usuario_id":"3f940884-7050-4ab5-891f-3398b29a8528","post_id":"184f6fa5-cb20-4c8c-925b-2d6de13b58bf"}
-        ```
+        Regras: usuário e post existem (404); autor não compartilha o próprio post; post precisa estar no feed de quem compartilha; `origem_usuario_id` (padrão: autor) é o autor ou um compartilhador do post e difere do usuário; par `(usuario_id, post_id)` único (422).
 
-        Um post pode ser compartilhado por vários usuários, mas cada par `(usuario_id, post_id)` só pode ser registrado uma vez. Compartilhar não cria outro post original nem duplica seu conteúdo.
-
-        **Definido pelo autor:** distribuir o original aos seguidores de quem compartilhou, permitindo a cascata: Ana publica → Bruno recebe → Bruno compartilha → Carla recebe.
-
-        **Definido pelo autor:** Bruno espera o post aparecer no feed e envia `POST /compartilhar-post`. O autor não pode compartilhar o próprio post.
-
-        A validade é verificada no corte final da execução: o compartilhamento precisa estar persistido e ter o post no feed do usuário.
-
-        Compartilhamentos sem presença válida no feed no corte não entram na contagem válida. Entregas e desdobramentos cuja única origem seja esse compartilhamento inválido também não entram; uma entrega com outro caminho válido continua contando uma única vez. Essa verificação não exige criar estados intermediários nos recursos.
-
-        **Definido pelo autor:** no máximo uma entrada por `(destinatario_id, post_id)` no feed, mesmo quando o destinatário recebe por múltiplos caminhos. Novo caminho não cria uma segunda entrada. Procedência e posição são fixadas pela primeira entrega gravada no banco. Uma sequência persistida ordena as entregas; caminhos posteriores preservam origem e posição e ficam registrados apenas como evidência para auditoria.
+        Laravel/MySQL responde 201 após persistir e distribuir na mesma requisição. Hyperf/Neo4j responde 202 após confirmação do RabbitMQ; o consumer em lote persiste depois.
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/UUID'
+        description: UUID do post; malformado retorna 422.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CompartilharPost'
       responses:
         '201':
-          description: Recurso criado.
+          description: Compartilhamento persistido e distribuído (composição síncrona).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Compartilhamento'
+        '202':
+          description: Evento aceito pelo broker; persistência assíncrona (composição Hyperf).
           content:
             application/json:
               schema:
@@ -381,12 +388,33 @@ paths:
           $ref: '#/components/responses/422'
         5XX:
           $ref: '#/components/responses/FalhaOperacional'
-      requestBody:
+  /posts/{id}/propagation-tree:
+    get:
+      operationId: arvorePropagacao
+      summary: Árvore de propagação do post até 4 níveis
+      tags:
+      - Compartilhamentos
+      description: |-
+        MySQL: CTE recursiva (`WITH RECURSIVE`). Neo4j: caminho variável `[:RESHARED_FROM*1..4]` filtrado pelo post. Até 1000 arestas, ordenadas por nível e `usuario_id`.
+      parameters:
+      - name: id
+        in: path
         required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/CompartilharPost'
+        schema:
+          $ref: '#/components/schemas/UUID'
+      responses:
+        '200':
+          description: Árvore (pode ser vazia).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ArvorePropagacao'
+        '404':
+          $ref: '#/components/responses/404'
+        '422':
+          $ref: '#/components/responses/422'
+        5XX:
+          $ref: '#/components/responses/FalhaOperacional'
   /feed/{usuario_id}:
     get:
       operationId: consultarFeed
@@ -577,13 +605,45 @@ components:
       type: object
       required:
       - usuario_id
-      - post_id
       properties:
         usuario_id:
           $ref: '#/components/schemas/UUID'
-        post_id:
+        origem_usuario_id:
           $ref: '#/components/schemas/UUID'
       additionalProperties: true
+    ArvorePropagacao:
+      type: object
+      required: [post_id, autor_id, profundidade_maxima, truncado, data]
+      properties:
+        post_id:
+          $ref: '#/components/schemas/UUID'
+        autor_id:
+          $ref: '#/components/schemas/UUID'
+        profundidade_maxima:
+          type: integer
+          const: 4
+        truncado:
+          type: boolean
+        data:
+          type: array
+          maxItems: 1000
+          items:
+            type: object
+            required: [usuario_id, origem_usuario_id, nivel, compartilhamento_id, criado_em]
+            properties:
+              usuario_id:
+                $ref: '#/components/schemas/UUID'
+              origem_usuario_id:
+                $ref: '#/components/schemas/UUID'
+              nivel:
+                type: integer
+                minimum: 1
+                maximum: 4
+              compartilhamento_id:
+                $ref: '#/components/schemas/UUID'
+              criado_em:
+                type: string
+                format: date-time
     RelacaoSeguir:
       type: object
       required:
@@ -610,6 +670,7 @@ components:
       - id
       - usuario_id
       - post_id
+      - origem_usuario_id
       - criado_em
       properties:
         id:
@@ -617,6 +678,8 @@ components:
         usuario_id:
           $ref: '#/components/schemas/UUID'
         post_id:
+          $ref: '#/components/schemas/UUID'
+        origem_usuario_id:
           $ref: '#/components/schemas/UUID'
         criado_em:
           type: string

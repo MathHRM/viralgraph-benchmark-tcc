@@ -15,6 +15,7 @@ class Share extends Model
     protected $fillable = [
         'user_id',
         'post_id',
+        'source_user_id',
     ];
 
     public function newUniqueId(): string

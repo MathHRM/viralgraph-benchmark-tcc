@@ -14,6 +14,7 @@ x-app: &app
     BATCH_SIZE: ${BATCH_SIZE:-100}
     FLUSH_MS: ${FLUSH_MS:-5}
     DISTRIBUTION_SLICE_MS: ${DISTRIBUTION_SLICE_MS:-50}
+    SHARE_PREFETCH: ${SHARE_PREFETCH:-50}
   depends_on:
     api1: {condition: service_healthy}
   ulimits:
@@ -81,7 +82,11 @@ services:
       RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-benchmark-local}
       RABBITMQ_SERVER_ADDITIONAL_ERL_ARGS: "+S 1:1 +A 4"
       RABBITMQ_CTL_ERL_ARGS: "+S 1:1 +A 1"
-    volumes: ["rabbitmq:/var/lib/rabbitmq"]
+    volumes:
+      - rabbitmq:/var/lib/rabbitmq
+      # Plugin Prometheus (porta 15692): profundidade das filas para a observabilidade.
+      - ./docker/rabbitmq/enabled_plugins:/etc/rabbitmq/enabled_plugins:ro
+    ports: ["127.0.0.1:${RABBITMQ_METRICS_PORT:-15692}:15692"]
     cpus: ${RABBITMQ_CPUS:-0.20}
     mem_limit: ${RABBITMQ_MEMORY:-512m}
     memswap_limit: ${RABBITMQ_MEMORY:-512m}

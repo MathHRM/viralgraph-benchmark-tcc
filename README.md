@@ -45,7 +45,8 @@ A entrega 4 corresponde, portanto, a **conclusões e trabalhos futuros**. A exec
 .
 ├── artigo/                              # Documento acadêmico em LaTeX
 ├── backends/hyperf-async/                # Hyperf/Swoole, RabbitMQ e Neo4j
-├── code/                                # Contrato, protocolo e gerador k6
+├── code/                                # Contrato, protocolo, gerador k6 e dataset de viralização
+├── observability/                       # Prometheus, Grafana e cAdvisor
 ├── modelo-de-artigo-icei-puc-minas/    # Template institucional do artigo
 ├── citations.md                         # Registro das fontes consultadas e citadas
 ├── Dockerfile                           # Imagem usada para compilar o LaTeX
@@ -109,7 +110,7 @@ DOCUMENT_NAME=tcc ./scripts/render-latex.sh
 
 ## Desenvolvimento da aplicação
 
-A composição assíncrona está em [`backends/hyperf-async/`](backends/hyperf-async/README.md), com instruções de execução, limites de recursos, testes e recuperação.
+A composição assíncrona está em [`backends/hyperf-async/`](backends/hyperf-async/README.md), com instruções de execução, limites de recursos, testes e recuperação. O cenário de viralização (dataset Zipf pré-semeado, snapshot de volumes, k6 `smoke`/`tcc` e observabilidade) está em [`code/docs/viralizacao.md`](code/docs/viralizacao.md).
 
 ## Referências
 

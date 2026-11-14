@@ -597,6 +597,7 @@ def main():
     env = {**os.environ, 'CONFIG': str(directory / 'config.json'), 'BASE_URL': args.base_url,
            'SUMMARY_PATH': str(directory / 'summary.json'), 'CORPUS_DIR': str(corpus_dir),
            'BENCHMARK_PORT': str(benchmark_port), 'REFERENCE_DATE': config['reference_date'],
+           'ARCHITECTURE': args.architecture,
            **RESOURCE_PROFILES[args.architecture]}
     command = ['k6', 'run', '--log-format', 'raw', '--console-output', str(directory / 'actions.jsonl'),
                '--out', f'json={directory / "metrics.jsonl"}', str(ROOT / 'stress.js')]
