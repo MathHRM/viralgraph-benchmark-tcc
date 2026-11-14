@@ -7,7 +7,9 @@
 #   scripts/viral.sh down     sync|async     derruba o ambiente (remove volumes do projeto)
 #   scripts/viral.sh obs up|down             Prometheus + Grafana + cAdvisor
 #   scripts/viral.sh warmup   sync|async     aquecimento só de leitura (GET), fora da medição
-#   MODE=smoke|tcc scripts/viral.sh load sync|async   (roda warmup antes; WARMUP=0 desliga)
+#   MODE=smoke|tcc SCENARIO=baseline|fanout|graph_read|mixed scripts/viral.sh load sync|async
+#                                            (roda warmup antes; WARMUP=0 desliga)
+#   SCENARIO=... scripts/viral.sh tcc sync|async   restore + load MODE=tcc (snapshot limpo)
 #
 # Opera somente nos projetos Compose tcc-viral-sync e tcc-viral-async.
 set -euo pipefail
@@ -140,13 +142,13 @@ cmd_warmup() {
 }
 
 cmd_load() {
-  local arch="$1" port metrics_url out
+  local arch="$1" scenario="${SCENARIO:-mixed}" port metrics_url out
   require_dataset
   [ "${WARMUP:-1}" = 0 ] || cmd_warmup "$arch"
   port="$(port_of "$arch")"
   metrics_url=""
   [ "$arch" = async ] && metrics_url="http://127.0.0.1:${RABBITMQ_METRICS_PORT:-15692}/metrics/per-object"
-  out="$ROOT/code/k6/results/viral-$arch-${MODE:-smoke}-$(date -u +%Y%m%dT%H%M%SZ)"
+  out="$ROOT/code/k6/results/viral-$arch-${MODE:-smoke}-$scenario-$(date -u +%Y%m%dT%H%M%SZ)"
   mkdir -p "$out"
   local outputs=()
   if curl -fsS -o /dev/null "http://127.0.0.1:9090/-/ready" 2>/dev/null; then
@@ -154,10 +156,10 @@ cmd_load() {
     export K6_PROMETHEUS_RW_SERVER_URL="http://127.0.0.1:9090/api/v1/write"
     export K6_PROMETHEUS_RW_TREND_STATS="p(50),p(95),p(99),avg,max"
   fi
-  log "k6 $arch MODE=${MODE:-smoke} -> $out"
-  MODE="${MODE:-smoke}" ARCH="$arch" BASE_URL="http://127.0.0.1:$port" \
+  log "k6 $arch MODE=${MODE:-smoke} SCENARIO=$scenario -> $out"
+  MODE="${MODE:-smoke}" SCENARIO="$scenario" ARCH="$arch" BASE_URL="http://127.0.0.1:$port" \
     DATASET="$DATASET/k6/dataset.json" RABBITMQ_METRICS_URL="$metrics_url" \
-    k6 run "${outputs[@]}" --tag "arch=$arch" --tag "mode=${MODE:-smoke}" \
+    k6 run "${outputs[@]}" --tag "arch=$arch" --tag "mode=${MODE:-smoke}" --tag "experiment=$scenario" \
       --summary-export "$out/summary.json" "$ROOT/code/k6/viral.js" 2>&1 | tee "$out/output.log"
   curl -fsS "http://127.0.0.1:$port/metricas" > "$out/metricas.json" || true
   log "métricas finais: $(cat "$out/metricas.json" 2>/dev/null)"
@@ -171,5 +173,6 @@ case "${1:-}" in
   down) cmd_down "${2:?sync|async}" ;;
   obs) cmd_obs "${2:-up}" ;;
   load) cmd_load "${2:?sync|async}" ;;
-  *) sed -n '2,13p' "$0"; exit 1 ;;
+  tcc) cmd_restore "${2:?sync|async}"; MODE=tcc cmd_load "$2" ;;
+  *) sed -n '2,15p' "$0"; exit 1 ;;
 esac
