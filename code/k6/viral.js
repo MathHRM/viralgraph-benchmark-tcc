@@ -1,16 +1,17 @@
 // Carga de viralização sobre o snapshot Zipf (code/dataset/generate.py).
 //
 //   MODE=smoke  30 s, 50 VUs constantes: valida rotas (sem 5xx) e coleta de métricas.
-//   MODE=tcc    rampa até VUS_MAX (padrão 600) em ~8 min: coleta para a monografia.
+//   MODE=tcc    rampa até VUS_MAX (padrão 600) em 3 min: coleta para a monografia.
 //   MODE=warmup aquecimento só de leitura após o restore (fora da medição): uma passada pelas
 //               árvores de todos os posts virais e pelos feeds de todos os usuários comuns.
 //
-// Mistura por iteração:
-//   70% leitura   feed de usuário comum | árvore de propagação de post viral (Zipf no ranking)
-//   25% escrita   usuário comum cria post | compartilha post viral que está no seu feed
-//    5% celebridade publica (fan-out 2000+ seguidores)
+// SCENARIO seleciona a mistura por iteração (padrão mixed):
+//   baseline    80% feed de comum | 20% escrita de comuns (metade post, metade share)
+//   fanout      80% celebridades (metade post, metade share; fan-out 2000+) | 20% feed de comum
+//   graph_read  90% árvore de propagação de post viral (Zipf no ranking) | 10% feed de comum
+//   mixed       70% leitura (metade feed, metade árvore) | 25% escrita de comuns | 5% celebridade publica
 //
-// Env: BASE_URL, ARCH=sync|async, DATASET (k6/dataset.json), RABBITMQ_METRICS_URL (opcional),
+// Env: BASE_URL, ARCH=sync|async, SCENARIO, DATASET (k6/dataset.json), RABBITMQ_METRICS_URL (opcional),
 //      VUS_MAX, THINK_MIN_MS, THINK_MAX_MS, ZIPF_S, WARMUP_VUS.
 import http from 'k6/http';
 import { check, sleep } from 'k6';
@@ -20,6 +21,7 @@ import { Counter, Gauge, Rate } from 'k6/metrics';
 
 const MODE = (__ENV.MODE || 'smoke').toLowerCase();
 const ARCH = (__ENV.ARCH || 'sync').toLowerCase();
+const SCENARIO = (__ENV.SCENARIO || 'mixed').toLowerCase();
 const BASE = (__ENV.BASE_URL || 'http://127.0.0.1:19998').replace(/\/$/, '');
 const QUEUE_URL = __ENV.RABBITMQ_METRICS_URL || '';
 const VUS_MAX = parseInt(__ENV.VUS_MAX || '600', 10);
@@ -29,6 +31,8 @@ const ZIPF_S = parseFloat(__ENV.ZIPF_S || '1.1');
 const WARMUP_VUS = parseInt(__ENV.WARMUP_VUS || '10', 10);
 if (!['smoke', 'tcc', 'warmup'].includes(MODE)) throw new Error(`MODE inválido: ${MODE}`);
 if (!['sync', 'async'].includes(ARCH)) throw new Error(`ARCH inválido: ${ARCH}`);
+const SCENARIOS = ['baseline', 'fanout', 'graph_read', 'mixed'];
+if (!SCENARIOS.includes(SCENARIO)) throw new Error(`SCENARIO inválido: ${SCENARIO} (${SCENARIOS.join('|')})`);
 
 // Sync confirma persistência (201); async confirma só a aceitação no broker (202).
 const SHARE_OK = ARCH === 'sync' ? 201 : 202;
@@ -47,7 +51,7 @@ const actions = new Counter('actions');
 const queueDepth = new Gauge('rabbitmq_queue_depth');
 const businessOk = new Rate('business_ok');
 
-const ROUTES = ['feed', 'propagation_tree', 'posts_create', 'share', 'celebrity_post'];
+const ROUTES = ['feed', 'propagation_tree', 'posts_create', 'share', 'celebrity_post', 'celebrity_share'];
 const thresholds = MODE === 'warmup' ? {
   // Só para o resumo imprimir p50/p95/p99 por rota; o aquecimento não reprova.
   'http_req_duration{name:feed}': ['p(99)>=0'],
@@ -71,12 +75,12 @@ const trafficScenario = MODE === 'smoke'
   ? { executor: 'constant-vus', vus: 50, duration: '30s', exec: 'traffic' }
   : {
     executor: 'ramping-vus', exec: 'traffic', startVUs: 0, gracefulRampDown: '30s',
+    // 3 min por cenário: 30 s até VUS_MAX/2, 30 s até VUS_MAX, 1m30 de patamar, 30 s de descida.
     stages: [
-      { duration: '1m', target: Math.round(VUS_MAX / 6) },
-      { duration: '2m', target: Math.round(VUS_MAX / 2) },
-      { duration: '2m', target: VUS_MAX },
-      { duration: '2m', target: VUS_MAX },
-      { duration: '1m', target: 0 },
+      { duration: '30s', target: Math.round(VUS_MAX / 2) },
+      { duration: '30s', target: VUS_MAX },
+      { duration: '1m30s', target: VUS_MAX },
+      { duration: '30s', target: 0 },
     ],
   };
 
@@ -92,7 +96,7 @@ if (QUEUE_URL && MODE !== 'warmup') {
   }
   scenarios.queue = {
     executor: 'constant-vus', exec: 'queueProbe', vus: 1,
-    duration: MODE === 'smoke' ? '40s' : '9m',
+    duration: MODE === 'smoke' ? '40s' : '3m30s',
   };
 }
 
@@ -157,6 +161,22 @@ function createPost(author, name) {
   businessOk.add(check(res, { [`${name} 201`]: r => r.status === 201 }));
 }
 
+// Celebridade compartilha post viral alheio com origem = autor (nível 1): fan-out para os 2000+
+// seguidores dela. Celebridades não têm feed no dataset; a API não exige o post no feed, só
+// origem válida. Cada par (celebridade, post) só vale uma vez; repetições viram 422.
+function celebrityShare() {
+  const user = pick(celebrities);
+  let post = viralPost();
+  for (let i = 0; i < 5 && post.author === user; i++) post = viralPost();
+  if (post.author === user) return;
+  const res = call('POST', `/posts/${post.id}/share`, { usuario_id: user, origem_usuario_id: post.author },
+    'celebrity_share', [SHARE_OK, 422]);
+  if (res.status === 422) shareDuplicates.add(1, { name: 'celebrity_share' });
+  businessOk.add(check(res, {
+    [`celebrity_share ${SHARE_OK}|422`]: r => r.status === SHARE_OK || r.status === 422,
+  }));
+}
+
 // Compartilhamento válido: usuário que tem o post viral no feed, com origem = quem o entregou
 // (autor => nível 1; compartilhador => níveis seguintes da árvore). Repetições viram 422.
 function share(name) {
@@ -170,20 +190,28 @@ function share(name) {
   businessOk.add(check(res, { [`${name} ${SHARE_OK}|422`]: r => r.status === SHARE_OK || r.status === 422 }));
 }
 
+const half = (a, b) => () => (Math.random() < 0.5 ? a() : b());
+const commonWrite = half(() => createPost(pick(commonUsers), 'posts_create'), () => share('share'));
+// Celebridade publica: fan-out imediato para 2000+ seguidores (síncrono no Laravel; fila no Hyperf).
+const celebrityPost = () => createPost(pick(celebrities), 'celebrity_post');
+
+// Cada cenário: [probabilidade acumulada, rótulo de actions{kind}, ação].
+const MIXES = {
+  baseline: [[0.80, 'read', readFeed], [1, 'common_write', commonWrite]],
+  fanout: [[0.80, 'celebrity', half(celebrityPost, celebrityShare)], [1, 'read', readFeed]],
+  graph_read: [[0.90, 'read', readTree], [1, 'read', readFeed]],
+  mixed: [
+    [0.70, 'read', half(readFeed, readTree)],
+    [0.95, 'common_write', commonWrite],
+    [1, 'celebrity', celebrityPost],
+  ],
+};
+const MIX = MIXES[SCENARIO];
+
 export function traffic() {
   const r = Math.random();
-  let kind;
-  if (r < 0.70) {
-    kind = 'read';
-    if (Math.random() < 0.5) readFeed(); else readTree();
-  } else if (r < 0.95) {
-    kind = 'common_write';
-    if (Math.random() < 0.5) createPost(pick(commonUsers), 'posts_create'); else share('share');
-  } else {
-    kind = 'celebrity';
-    // Celebridade publica: fan-out imediato para 2000+ seguidores (síncrono no Laravel; fila no Hyperf).
-    createPost(pick(celebrities), 'celebrity_post');
-  }
+  const [, kind, action] = MIX.find(([p]) => r < p) || MIX[MIX.length - 1];
+  action();
   actions.add(1, { kind });
   sleep((THINK_MIN + Math.random() * (THINK_MAX - THINK_MIN)) / 1000);
 }

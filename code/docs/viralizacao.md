@@ -54,21 +54,23 @@ A geração do snapshot é feita uma vez. Na máquina de desenvolvimento ⚠️ 
 
 ```bash
 scripts/viral.sh obs up                       # Prometheus :9090, Grafana :3000, cAdvisor :8088
-MODE=smoke scripts/viral.sh load sync         # 30 s, 50 VUs
-MODE=tcc   scripts/viral.sh load async        # ~8 min, rampa até VUS_MAX (padrão 600)
+MODE=smoke scripts/viral.sh load sync         # 30 s, 50 VUs (SCENARIO padrão: mixed)
+make viral-tcc VIRAL_ARCH=async SCENARIO=fanout   # restore do snapshot + warmup + MODE=tcc (3 min)
+make viral-tcc-all VIRAL_ARCH=sync                # os 4 cenários, restore limpo antes de cada um
 ```
 
-Mistura por iteração:
+`SCENARIO` seleciona a mistura por iteração:
 
-| Fatia | Ação |
+| Cenário | Mistura |
 | --- | --- |
-| 70% | leitura: metade feed de usuário comum aleatório, metade árvore de post viral (Zipf `s=1,1` sobre o ranking de cascatas) |
-| 25% | escrita de comuns: metade `POST /posts`, metade `POST /posts/:id/share` com candidato válido |
-| 5% | celebridade publica (fan-out para 2000+ seguidores) |
+| `baseline` | 80% `GET /feed/:id` de comum; 20% escrita de comuns (metade `POST /posts`, metade `POST /posts/:id/share` com candidato válido) |
+| `fanout` | 80% ações de celebridades (metade `POST /posts`, metade `POST /posts/:id/share` de post viral alheio, origem = autor); 20% `GET /feed/:id` de comum |
+| `graph_read` | 90% `GET /posts/:id/propagation-tree` de post viral (Zipf `s=1,1` sobre o ranking de cascatas); 10% `GET /feed/:id` |
+| `mixed` (padrão) | 70% leitura (metade feed, metade árvore); 25% escrita de comuns; 5% celebridade publica |
 
-Celebridades não seguem ninguém no dataset, então não têm posts no feed e não compartilham; sua ação é a publicação. Repetições de compartilhamento retornam 422 e são contadas em `share_duplicates`.
+Celebridades não seguem ninguém no dataset, então não têm posts no feed; no `fanout` compartilham post viral de outro autor com origem = autor (a API não exige o post no feed, só origem válida), gerando fan-out para seus 2000+ seguidores. Cada par (celebridade, post) só vale uma vez (20 × ~150 pares); repetições retornam 422 e são contadas em `share_duplicates`, o que tende a crescer ao longo do `fanout`.
 
-`MODE=tcc` faz rampa `VUS_MAX/6` (1 min) → `VUS_MAX/2` (2 min) → `VUS_MAX` (2 min) → patamar (2 min) → 0 (1 min). Variáveis: `VUS_MAX`, `THINK_MIN_MS`/`THINK_MAX_MS` (padrão 50–250 ms), `ZIPF_S`.
+`MODE=tcc` dura 3 min: `VUS_MAX/2` (30 s) → `VUS_MAX` (30 s) → patamar (1m30) → 0 (30 s). Variáveis: `VUS_MAX`, `THINK_MIN_MS`/`THINK_MAX_MS` (padrão 50–250 ms), `ZIPF_S`. Resultados ficam em `code/k6/results/viral-<arch>-<mode>-<cenário>-<timestamp>/`; as séries do Prometheus recebem a tag `experiment=<cenário>`.
 
 Métricas expostas:
 
