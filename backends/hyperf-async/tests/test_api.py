@@ -67,7 +67,7 @@ class ContractTest(unittest.TestCase):
         route_missing = {"erro": {"codigo": "nao_encontrado", "mensagem": "Rota não encontrada."}}
         resource_missing = {"erro": {"codigo": "nao_encontrado", "mensagem": "Recurso não encontrado."}}
         method_invalid = {"erro": {"codigo": "metodo_invalido", "mensagem": "Método não permitido."}}
-        for method, path in [("GET", "/seguir-usuario"), ("GET", "/compartilhar-post"),
+        for method, path in [("GET", "/seguir-usuario"), ("GET", "/posts/id/share"),
                              ("POST", "/metricas"), ("POST", "/usuarios/id"),
                              ("POST", "/posts/id"), ("POST", "/feed/id")]:
             with self.subTest(method=method, path=path):
@@ -99,8 +99,12 @@ class ContractTest(unittest.TestCase):
     def feed(self, user):
         return request("GET", "/feed/" + user)[1]["data"]
 
-    def share(self, user, post):
-        return request("POST", "/compartilhar-post", {"usuario_id": user, "post_id": post})
+    def share(self, user, post, source=None, instance=None):
+        payload = {"usuario_id": user} | ({"origem_usuario_id": source} if source else {})
+        return request("POST", "/posts/" + post + "/share", payload, instance)
+
+    def tree(self, post):
+        return request("GET", "/posts/" + post + "/propagation-tree")
 
     def test_validation(self):
         valid = {"nome": "Ana", "apelido": str(uuid.uuid4()), "nascimento": "2000-01-01"}
@@ -109,7 +113,7 @@ class ContractTest(unittest.TestCase):
                       {"nascimento": "2000-02-30"}, {"nascimento": "2100-01-01"}):
             self.assertEqual(request("POST", "/usuarios", valid | patch)[0], 422, patch)
         self.assertEqual(request("POST", "/usuarios", raw="{")[0], 400)
-        self.assertEqual(request("POST", "/usuarios", raw="")[0], 400)
+        self.assertEqual(request("POST", "/usuarios", raw="")[0], 422)
         self.assertEqual(request("POST", "/usuarios", raw=" \t\n")[0], 400)
         self.assertEqual(request("POST", "/usuarios", valid, media="text/plain")[0], 422)
         for value in ([], [valid], 0, 5, None, True, "texto"):
@@ -143,7 +147,7 @@ class ContractTest(unittest.TestCase):
         for path, valid_payload, field in [
             ("/posts", {"usuario_id": author, "conteudo": "texto"}, "usuario_id"),
             ("/seguir-usuario", {"seguidor_id": author, "seguido_id": author}, "seguidor_id"),
-            ("/compartilhar-post", {"usuario_id": author, "post_id": author}, "post_id"),
+            ("/posts/" + author + "/share", {"usuario_id": author}, "usuario_id"),
         ]:
             for value in (None, 123, [], {}, "bad", author + "\n"):
                 self.assertEqual(request("POST", path, valid_payload | {field: value})[:2], (422, error))
@@ -190,10 +194,14 @@ class ContractTest(unittest.TestCase):
         data = wait_for(lambda: request("GET", "/posts/" + p, instance="api2")[1].get("conteudo"))
         self.assertEqual(data, "  café\u0301 😀  ")
         wait_for(lambda: any(x["post"]["id"] == p for x in self.feed(a)))
+        # Aceitação assíncrona: duplicatas concorrentes podem ser aceitas (202), mas o consumer
+        # persiste um único SHARED por (usuário, post).
+        before = request("GET", "/metricas")[1]["compartilhamentos"]
         with concurrent.futures.ThreadPoolExecutor(2) as pool:
-            responses = list(pool.map(lambda instance: request("POST", "/compartilhar-post", {
-                "usuario_id": a, "post_id": p}, instance), ["api1", "api2"]))
-        self.assertEqual(sorted(r[0] for r in responses), [201, 422])
+            responses = list(pool.map(lambda instance: self.share(a, p, instance=instance), ["api1", "api2"]))
+        self.assertTrue(all(r[0] in (202, 422) for r in responses), responses)
+        wait_for(lambda: request("GET", "/metricas")[1]["compartilhamentos"] == before + 1)
+        self.assertEqual(self.share(a, p)[0], 422)
 
     def test_cascade_first_delivery_recovery(self):
         a, b, c, d = [self.user() for _ in range(4)]
@@ -214,14 +222,18 @@ class ContractTest(unittest.TestCase):
             compose("start", "worker")
         wait_for(lambda: len(self.feed(b)) == 1 and len(self.feed(d)) == 1)
         first = self.feed(d)[0]
-        self.assertEqual(first["origem"], "publicacao")
+        self.assertEqual(first["origem"], "post")
         self.assertEqual(self.share(a, p)[0], 422)
-        self.assertEqual(self.share(c, p)[0], 422)
-        self.assertEqual(self.share(b, p)[0], 201)
+        self.assertEqual(self.share(c, p, source=b)[0], 422)  # origem ainda não compartilhou
+        self.assertEqual(self.share(b, p)[0], 202)
         wait_for(lambda: len(self.feed(c)) == 1)
-        self.assertEqual(self.share(c, p)[0], 201)
-        wait_for(lambda: json.loads(compose("exec", "-T", "api1", "php", "tests/control.php",
-                                            "origins", d, p))["total"] == 2)
+        self.assertEqual(self.feed(c)[0]["origem"], "share")
+        self.assertEqual(self.share(c, p, source=b)[0], 202)
+        wait_for(lambda: len(self.tree(p)[1]["data"]) == 2)
+        tree = self.tree(p)[1]
+        self.assertEqual(tree["autor_id"], a)
+        self.assertEqual(sorted((e["usuario_id"], e["origem_usuario_id"], e["nivel"]) for e in tree["data"]),
+                         sorted([(b, a, 1), (c, b, 2)]))
         self.assertEqual(self.feed(d), [first])
         self.assertEqual(self.feed(a), [])
         e = self.user()
@@ -285,10 +297,11 @@ class ContractTest(unittest.TestCase):
         try:
             status, body, _ = request("POST", "/posts", {"usuario_id": author, "conteudo": "broker parado"})
             self.assertEqual(status, 503, body)
-            self.assertEqual(self.share(readers[0], p)[0], 201)
+            self.assertEqual(self.share(readers[0], p)[0], 503)  # sem broker não há aceitação
             self.assertEqual(self.feed(downstream), [])
         finally:
             compose("start", "rabbitmq")
+        wait_for(lambda: self.share(readers[0], p)[0] == 202, timeout=90)
         wait_for(lambda: len(self.feed(downstream)) == 1, timeout=90)
 
     def test_rabbitmq_recreation_preserves_pending_post(self):

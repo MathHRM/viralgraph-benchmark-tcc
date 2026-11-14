@@ -119,43 +119,30 @@ class SocialApiTest extends TestCase
             ->assertJsonPath('conteudo', "  texto preservado \n");
     }
 
-    public function test_share_requires_post_in_actor_feed_and_distributes_to_actor_followers(): void
+    public function test_share_distributes_to_sharer_followers_synchronously(): void
     {
         $author = $this->createUser('author');
         $sharer = $this->createUser('sharer');
         $recipient = $this->createUser('recipient');
         $outsider = $this->createUser('outsider');
 
-        $this->postJson('/seguir-usuario', [
-            'seguidor_id' => $sharer->id,
-            'seguido_id' => $author->id,
-        ])->assertCreated();
-        $this->postJson('/seguir-usuario', [
-            'seguidor_id' => $recipient->id,
-            'seguido_id' => $sharer->id,
-        ])->assertCreated();
-        $this->postJson('/seguir-usuario', [
-            'seguidor_id' => $recipient->id,
-            'seguido_id' => $author->id,
-        ])->assertCreated();
-        $this->postJson('/seguir-usuario', [
-            'seguidor_id' => $author->id,
-            'seguido_id' => $sharer->id,
-        ])->assertCreated();
+        $this->follow($sharer->id, $author->id);
+        $this->follow($recipient->id, $sharer->id);
+        $this->follow($recipient->id, $author->id);
+        $this->follow($author->id, $sharer->id);
 
-        $postResponse = $this->postJson('/posts', [
-            'usuario_id' => $author->id,
-            'conteudo' => 'Original',
-        ])->assertCreated();
-        $postId = $postResponse->json('id');
+        $postId = $this->createPost($author->id, 'Original');
 
-        $payload = ['usuario_id' => $sharer->id, 'post_id' => $postId];
-        $this->postJson('/compartilhar-post', $payload)
+        $payload = ['usuario_id' => $sharer->id];
+        $this->postJson('/posts/'.$postId.'/share', $payload)
             ->assertCreated()
-            ->assertJsonStructure(['id', 'usuario_id', 'post_id', 'criado_em']);
+            ->assertJsonStructure(['id', 'usuario_id', 'post_id', 'origem_usuario_id', 'criado_em'])
+            ->assertJsonPath('origem_usuario_id', $author->id)
+            ->assertJsonPath('post_id', $postId);
 
-        $this->postJson('/compartilhar-post', $payload)->assertUnprocessable();
+        $this->postJson('/posts/'.$postId.'/share', $payload)->assertUnprocessable();
 
+        // recipient já recebera pela publicação: a entrega por compartilhamento não duplica.
         $this->assertDatabaseHas('feed_items', [
             'user_id' => $recipient->id,
             'post_id' => $postId,
@@ -163,14 +150,109 @@ class SocialApiTest extends TestCase
             'event_author_id' => $author->id,
         ]);
         $this->assertDatabaseCount('feed_items', 2);
-        $this->assertDatabaseMissing('feed_items', [
-            'user_id' => $author->id,
-            'post_id' => $postId,
-        ]);
-        $this->assertDatabaseMissing('feed_items', [
-            'user_id' => $outsider->id,
-            'post_id' => $postId,
-        ]);
+        $this->assertDatabaseMissing('feed_items', ['user_id' => $author->id, 'post_id' => $postId]);
+        $this->assertDatabaseMissing('feed_items', ['user_id' => $outsider->id, 'post_id' => $postId]);
+    }
+
+    public function test_share_delivers_second_degree_post_to_followers_of_sharer(): void
+    {
+        $author = $this->createUser('deg-author');
+        $sharer = $this->createUser('deg-sharer');
+        $reader = $this->createUser('deg-reader');
+        $this->follow($sharer->id, $author->id);
+        $this->follow($reader->id, $sharer->id);
+
+        $postId = $this->createPost($author->id, 'Segundo grau');
+        $this->postJson('/posts/'.$postId.'/share', ['usuario_id' => $sharer->id])->assertCreated();
+
+        $this->getJson('/feed/'.$reader->id)
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.post.id', $postId)
+            ->assertJsonPath('data.0.origem', 'share')
+            ->assertJsonPath('data.0.autor_evento_id', $sharer->id);
+    }
+
+    public function test_share_validates_author_origin_and_resources(): void
+    {
+        $author = $this->createUser('val-author');
+        $sharer = $this->createUser('val-sharer');
+        $other = $this->createUser('val-other');
+        $outsider = $this->createUser('val-outsider');
+        $this->follow($sharer->id, $author->id);
+        $postId = $this->createPost($author->id, 'Validação');
+
+        $this->postJson('/posts/'.$postId.'/share', ['usuario_id' => $outsider->id])
+            ->assertCreated(); // presença no feed não é exigida
+
+        $this->postJson('/posts/'.$postId.'/share', ['usuario_id' => $author->id])
+            ->assertUnprocessable()->assertJsonPath('erro.codigo', 'validacao');
+        $this->postJson('/posts/'.$postId.'/share', ['usuario_id' => $sharer->id, 'origem_usuario_id' => $other->id])
+            ->assertUnprocessable();
+        $this->postJson('/posts/'.$postId.'/share', ['usuario_id' => $sharer->id, 'origem_usuario_id' => $sharer->id])
+            ->assertUnprocessable();
+        $this->postJson('/posts/not-a-uuid/share', ['usuario_id' => $sharer->id])->assertUnprocessable();
+        $this->postJson('/posts/'.$postId.'/share', ['usuario_id' => '00000000-0000-4000-8000-000000000000'])
+            ->assertNotFound();
+        $this->postJson('/posts/00000000-0000-4000-8000-000000000000/share', ['usuario_id' => $sharer->id])
+            ->assertNotFound();
+    }
+
+    public function test_propagation_tree_uses_recursive_cte_up_to_four_levels(): void
+    {
+        $author = $this->createUser('tree-author');
+        $chain = [];
+        for ($index = 1; $index <= 5; $index++) {
+            $chain[] = $this->createUser('tree-l'.$index);
+        }
+        $sibling = $this->createUser('tree-sibling');
+        $previous = $author->id;
+        foreach ($chain as $user) {
+            $this->follow($user->id, $previous); // cada nível recebe do anterior
+            $previous = $user->id;
+        }
+        $this->follow($sibling->id, $author->id);
+        $postId = $this->createPost($author->id, 'Viral');
+
+        $source = $author->id;
+        foreach ($chain as $user) {
+            $this->postJson('/posts/'.$postId.'/share', ['usuario_id' => $user->id, 'origem_usuario_id' => $source])
+                ->assertCreated();
+            $source = $user->id;
+        }
+        $this->postJson('/posts/'.$postId.'/share', ['usuario_id' => $sibling->id])->assertCreated();
+
+        $response = $this->getJson('/posts/'.$postId.'/propagation-tree')
+            ->assertOk()
+            ->assertJsonPath('post_id', $postId)
+            ->assertJsonPath('autor_id', $author->id)
+            ->assertJsonPath('profundidade_maxima', 4)
+            ->assertJsonPath('truncado', false);
+
+        $edges = collect($response->json('data'));
+        $this->assertCount(5, $edges, 'quatro níveis da cadeia + irmão no nível 1; o 5º nível fica fora');
+        $this->assertSame([1, 1, 2, 3, 4], $edges->pluck('nivel')->sort()->values()->all());
+        $this->assertSame($chain[2]->id, $edges->firstWhere('usuario_id', $chain[3]->id)['origem_usuario_id']);
+        $this->assertNull($edges->firstWhere('usuario_id', $chain[4]->id));
+
+        $this->getJson('/posts/00000000-0000-4000-8000-000000000000/propagation-tree')->assertNotFound();
+        $this->getJson('/posts/not-a-uuid/propagation-tree')->assertUnprocessable();
+    }
+
+    private function follow(string $followerId, string $followedId): void
+    {
+        $this->postJson('/seguir-usuario', [
+            'seguidor_id' => $followerId,
+            'seguido_id' => $followedId,
+        ])->assertCreated();
+    }
+
+    private function createPost(string $authorId, string $content): string
+    {
+        return $this->postJson('/posts', [
+            'usuario_id' => $authorId,
+            'conteudo' => $content,
+        ])->assertCreated()->json('id');
     }
 
     public function test_search_responses_use_contract_pagination_shape(): void
@@ -412,6 +494,16 @@ class SocialApiTest extends TestCase
         ], '{"nome":"Ana"}')
             ->assertUnsupportedMediaType()
             ->assertJsonPath('erro.codigo', 'tipo_midia_nao_aceito');
+    }
+
+    public function test_empty_body_returns_422(): void
+    {
+        $this->call('POST', '/usuarios', [], [], [], [
+            'CONTENT_TYPE' => 'application/json',
+            'HTTP_ACCEPT' => 'application/json',
+        ], '')
+            ->assertUnprocessable()
+            ->assertJsonPath('erro.codigo', 'validacao');
     }
 
     public function test_malformed_json_returns_400(): void

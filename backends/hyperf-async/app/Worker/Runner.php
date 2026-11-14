@@ -13,6 +13,7 @@ final class Runner
         private PostBatchProcessor $batches,
         private OutboxPublisher $outbox,
         private FeedDistributor $feeds,
+        private ShareConsumer $shares,
     ) {}
 
     public function run(): void
@@ -27,6 +28,8 @@ final class Runner
         pcntl_async_signals(true);
         pcntl_signal(SIGTERM, function () { $this->running = false; });
         pcntl_signal(SIGINT, function () { $this->running = false; });
+        // Compartilhamentos: consumer push em corrotina própria, concorrente ao loop de posts.
+        \Hyperf\Coroutine\Coroutine::create(fn () => $this->shares->run(fn () => $this->running));
         while ($this->running) {
             $broker = null;
             try {

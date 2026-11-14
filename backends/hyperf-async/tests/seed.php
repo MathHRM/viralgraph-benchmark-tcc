@@ -84,7 +84,7 @@ foreach ($users as $u => $user) {
         if ($post[1] !== $user[0]) {
             $seq++;
             $feed[] = [sprintf('30000000-0000-4000-8000-%012d', count($feed) + 1), $user[0],
-                $post[0], 'publicacao', $post[1], $post[0], $seq];
+                $post[0], 'post', $post[1], $post[0], $seq];
             if ($seq <= 5) {
                 $shares[] = [sprintf('40000000-0000-4000-8000-%012d', count($shares) + 1),
                     $user[0], $post[0], '2026-11-08 00:00:00'];

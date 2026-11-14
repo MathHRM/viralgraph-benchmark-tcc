@@ -34,7 +34,7 @@ final class PostRepository
             ON CREATE SET n.usuario_id=p.usuario_id, n.conteudo=p.conteudo, n.criado_em=p.criado_em
             MERGE (u)-[:AUTHORED]->(n)
             MERGE (t:Task {id:p.id})
-            ON CREATE SET t.post_id=p.id, t.actor=p.usuario_id, t.kind="publicacao",
+            ON CREATE SET t.post_id=p.id, t.actor=p.usuario_id, t.kind="post",
                 t.cursor="", t.published=false, t.done=false, t.follow_cutoff=timestamp()', ['posts' => $posts]);
     }
 }

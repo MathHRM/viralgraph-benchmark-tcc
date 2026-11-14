@@ -7,6 +7,8 @@ use PhpAmqpLib\Message\AMQPMessage;
 
 class Broker
 {
+    public const QUEUES = ['posts', 'distribution', 'shares'];
+
     public readonly \PhpAmqpLib\Channel\AMQPChannel $channel;
     private bool $rejected = false;
     private bool $confirmed = false;
@@ -16,7 +18,7 @@ class Broker
         // O canal é exclusivo da operação; a conexão pertence ao Hyperf.
         $this->channel = $connection->getConfirmChannel();
         try {
-            foreach (['posts', 'distribution'] as $queue) {
+            foreach (self::QUEUES as $queue) {
                 $this->channel->queue_declare($queue, false, true, false, false);
             }
             $this->channel->set_ack_handler(function () { $this->confirmed = true; });

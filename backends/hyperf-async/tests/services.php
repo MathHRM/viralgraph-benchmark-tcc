@@ -27,9 +27,10 @@ final class StubClient extends Neo4jClient {
 final class StubBroker extends Broker {
     public bool $closed = false;
     public array $payload = [];
+    public string $queue = '';
     public function __construct(private bool $fail) {}
     public function publish(string $queue, array $payload): void {
-        check($queue === 'posts');
+        $this->queue = $queue;
         $this->payload = $payload;
         if ($this->fail) { throw new RuntimeException('Broker indisponível.'); }
     }
@@ -57,12 +58,29 @@ invalid(fn () => $follow->create(['seguidor_id' => 'a', 'seguido_id' => 'a']));
 check(count($client->queries) === 1); // Valida e grava em uma transação Neo4j.
 $client->next = [['seguidor_existe' => false, 'seguido_existe' => true]];
 invalid(fn () => $follow->create(['seguidor_id' => 'missing', 'seguido_id' => 'a']), 404);
+$factory = new StubFactory();
+$share = new ShareService(new ShareRepository($client), $factory);
+$state = fn (array $patch) => [array_merge(['user_exists' => true, 'author_id' => 'author',
+    'already_shared' => false, 'source_shared' => false], $patch)];
+$client->next = $state(['user_exists' => false]);
+invalid(fn () => $share->accept(['usuario_id' => 'reader', 'post_id' => 'post']), 404);
+$client->next = $state(['author_id' => null]);
+invalid(fn () => $share->accept(['usuario_id' => 'reader', 'post_id' => 'post']), 404);
+$client->next = $state([]);
+invalid(fn () => $share->accept(['usuario_id' => 'author', 'post_id' => 'post'])); // autor não compartilha
+invalid(fn () => $share->accept(['usuario_id' => 'reader', 'post_id' => 'post', 'origem_usuario_id' => 'reader']));
+invalid(fn () => $share->accept(['usuario_id' => 'reader', 'post_id' => 'post', 'origem_usuario_id' => 'other']));
+$client->next = $state(['already_shared' => true]);
+invalid(fn () => $share->accept(['usuario_id' => 'reader', 'post_id' => 'post']));
+check($factory->opened === []); // nenhuma publicação para pedidos inválidos
+$client->next = $state(['source_shared' => true]);
+$result = $share->accept(['usuario_id' => 'reader', 'post_id' => 'post', 'origem_usuario_id' => 'other']);
+check($result['origem_usuario_id'] === 'other' && $factory->opened[0]->queue === 'shares');
+$client->next = $state([]);
+$result = $share->accept(['usuario_id' => 'reader', 'post_id' => 'post']);
+check($result['usuario_id'] === 'reader' && $result['origem_usuario_id'] === 'author' && isset($result['id'], $result['criado_em']));
+check(count($factory->opened) === 2 && $factory->opened[1]->closed);
 $client->next = [['n' => ['usuario_id' => 'author']]];
-$share = new ShareService($users, new PostRepository($client), new ShareRepository($client));
-invalid(fn () => $share->create(['usuario_id' => 'author', 'post_id' => 'post']));
-$client->next = [['n' => ['usuario_id' => 'another']]];
-$result = $share->create(['usuario_id' => 'reader', 'post_id' => 'post']);
-check($result['usuario_id'] === 'reader' && isset($result['id'], $result['criado_em']));
 $client->queries = [];
 $userService = new UserService($users);
 invalid(fn () => $userService->create(['nome' => 'Pessoa', 'apelido' => 'nick', 'nascimento' => '2999-01-01']));

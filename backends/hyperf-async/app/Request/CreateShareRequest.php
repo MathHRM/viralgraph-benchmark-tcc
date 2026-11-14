@@ -11,11 +11,19 @@ final class CreateShareRequest extends FormRequest
         return true;
     }
 
+    protected function validationData(): array
+    {
+        $data = $this->all();
+        $data['post_id'] = $this->route('id');
+        return $data;
+    }
+
     public function rules(): array
     {
         return [
-            'usuario_id' => 'bail|required|uuid',
             'post_id' => 'bail|required|uuid',
+            'usuario_id' => 'bail|required|uuid',
+            'origem_usuario_id' => 'bail|sometimes|required|uuid',
         ];
     }
 }

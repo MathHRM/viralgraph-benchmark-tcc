@@ -3,55 +3,61 @@ declare(strict_types=1);
 namespace App\Service;
 
 use App\Exception\ApiError;
-use App\Repository\PostRepository;
+use App\Infrastructure\RabbitMQ\BrokerFactory;
 use App\Repository\ShareRepository;
-use App\Repository\UserRepository;
 use App\Validation\Input;
-use Hyperf\Coroutine\Coroutine;
-use Hyperf\Coroutine\Exception\ParallelExecutionException;
-use Hyperf\Coroutine\Parallel;
 
 final class ShareService
 {
-    public function __construct(private UserRepository $users, private PostRepository $posts, private ShareRepository $shares) {}
-
-    public function create(array $values): array
-    {
-        // Existência do usuário e do post são validações independentes. Dentro de corrotina rodam
-        // em paralelo (latência = máx, não soma dos dois round-trips); fora de corrotina seguem a
-        // ordem sequencial original. A precedência do erro é preservada: se ambos faltarem, o 404
-        // do usuário prevalece. A regra do próprio post e a unicidade seguem inalteradas.
-        $post = $this->validate($values['usuario_id'], $values['post_id']);
-        if ($post['usuario_id'] === $values['usuario_id']) {
-            throw new ApiError();
-        }
-        $result = ['id' => Input::id()] + $values + ['criado_em' => Input::now()];
-        if (!$this->shares->create($result)) {
-            throw new ApiError();
-        }
-        return $result;
-    }
+    public function __construct(private ShareRepository $shares, private BrokerFactory $brokers) {}
 
     /**
-     * Valida usuário e post; devolve as propriedades do post para a regra do próprio autor.
-     * Preserva a semântica: 404 do usuário tem precedência sobre o 404 do post.
+     * Aceitação assíncrona: valida contra o estado atual do Neo4j (uma consulta), publica o
+     * evento com confirmação persistente do RabbitMQ e devolve a representação aceita (202).
+     * A persistência e o fan-out ficam com o consumer em lote do worker.
+     *
+     * Duplicata já persistida retorna 422; duplicata ainda na fila é aceita e descartada pelo
+     * consumer (SHARED.key é único), sem nova distribuição.
      */
-    private function validate(string $userId, string $postId): array
+    public function accept(array $values): array
     {
-        if (!Coroutine::inCoroutine()) {
-            $this->users->get($userId);
-            return $this->posts->get($postId);
+        $postId = $values['post_id'];
+        $userId = $values['usuario_id'];
+        $sourceId = $values['origem_usuario_id'] ?? null;
+        $state = $this->shares->context($userId, $postId, $sourceId);
+        if (!$state['user_exists'] || $state['author_id'] === null) {
+            throw new ApiError(404, 'nao_encontrado', 'Recurso não encontrado.');
         }
-
-        $parallel = new Parallel();
-        $parallel->add(fn () => $this->users->get($userId), 'user');
-        $parallel->add(fn () => $this->posts->get($postId), 'post');
+        $authorId = $state['author_id'];
+        $sourceId ??= $authorId;
+        // Mesmas regras do síncrono: origem = autor ou compartilhador já persistido. Presença no feed
+        // não é exigida: o feed é eventualmente consistente e geraria falsos negativos sob carga.
+        if ($authorId === $userId || $sourceId === $userId || $state['already_shared']
+            || ($sourceId !== $authorId && !$state['source_shared'])) {
+            throw new ApiError();
+        }
+        $event = ['id' => Input::id(), 'usuario_id' => $userId, 'post_id' => $postId,
+            'origem_usuario_id' => $sourceId, 'criado_em' => Input::now()];
+        $broker = $this->brokers->open();
         try {
-            return $parallel->wait()['post'];
-        } catch (ParallelExecutionException $failure) {
-            // Reordena o erro conforme a precedência original: usuário antes do post.
-            $throwables = $failure->getThrowables();
-            throw $throwables['user'] ?? $throwables['post'];
+            $broker->publish('shares', $event);
+        } finally {
+            $broker->close();
         }
+        return $event;
+    }
+
+    public function tree(string $postId): array
+    {
+        $result = $this->shares->tree($postId)
+            ?? throw new ApiError(404, 'nao_encontrado', 'Recurso não encontrado.');
+        $edges = $result['edges'];
+        return [
+            'post_id' => $postId,
+            'autor_id' => $result['author_id'],
+            'profundidade_maxima' => ShareRepository::TREE_DEPTH,
+            'truncado' => count($edges) > ShareRepository::TREE_LIMIT,
+            'data' => array_slice($edges, 0, ShareRepository::TREE_LIMIT),
+        ];
     }
 }
